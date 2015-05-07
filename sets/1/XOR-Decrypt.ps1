@@ -22,7 +22,18 @@ BiGramScore     : 282
 TriGramScore    : 64
 TotalScore      : 803
 This satisfies set 1, challenge 3 and can be used in a loop to satisfy
-set 1, challenge 4.
+set 1, challenge 4. Here's how:
+$(foreach ($line in Get-Content 4.txt) { 
+    .\XOR-Decrypt.ps1 -hexstring $line }) | 
+        Sort-Object TotalScore -Descending | Select-Object -First 1
+Key             : 5
+EncryptedText   : 7b5a4215415d544115415d5015455447414c155c46155f4058455c5b523f
+DecryptedText   : [ Redacted to keep people honest ]
+Entropy         : 3.98656924646063
+LetterFreqScore : 337
+BiGramScore     : 357
+TriGramScore    : 177
+TotalScore      : 871
 #>
 
 
