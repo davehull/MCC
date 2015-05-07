@@ -5,6 +5,11 @@ alpha and numeric characters as a key space, XORing the string with
 each single character and returning a XOR decrypted string.
 .PARAMETER hexString
 A required argument -- the hexadecimal encoded string to be decoded.
+.PARAMETER Key
+An optional key to use for decryption, without this parameter, the
+script will attempt to brute-force the key and apply ngram and entropy
+analysis to the results to make an educated guess about the correct
+key.
 .PARAMETER AllResults
 An optional switch that causes the script to return the all decrypted 
 objects, by default the script will only return the object with the 
@@ -42,7 +47,9 @@ Param(
     [Parameter(Mandatory=$True,Position=0)]
         [String]$hexString,
     [Parameter(Mandatory=$False,Position=1)]
-        [Switch]$AllResults
+        [Switch]$AllResults,
+    [Parameter(Mandatory=$False,Position=2)]
+        [String]$key
 )
 
 function ConvertHex-ToByte {
@@ -64,14 +71,6 @@ Param(
     })
 
     $byteString
-}
-
-function GetKeyByte {
-Param(
-    [Parameter(Mandatory=$True,Position=0)]
-        [Char]$key
-)
-    [System.Text.Encoding]::Default.GetBytes($key)
 }
 
 function Score-LetterFrequency {
@@ -340,7 +339,7 @@ Param(
             }
         }        
     }
-    $Score
+    $Score * 2
 }
        
 function Score-TriGrams {
@@ -509,7 +508,7 @@ Param(
             }
         }        
     }
-    $Score
+    $Score * 3
 }       
         
 function GetShannonEntropy {
@@ -536,28 +535,44 @@ Param(
     $Entropy
 }
 
-$keyspace   = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-$byteString = ConvertHex-ToByte $hexString
-$obj = "" | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
+function GetByte {
+Param(
+    [Parameter(Mandatory=$True,Position=0)]
+        [Char]$key
+)
+    [System.Text.Encoding]::Default.GetBytes($key)
+}
 
-for ($j = 0; $j -lt $keyspace.Length; $j++) {
-    $keyByte = GetKeyByte $keyspace[$j]
-    $xordBytes = $(for ($i = 0; $i -lt $byteString.length; $i++) {
-        $byteString[$i] -bxor $keyByte
+function GetBytes {
+Param(
+    [Parameter(Mandatory=$True,Position=0)]
+        [String]$key
+)
+    [System.Text.Encoding]::Default.GetBytes($key)
+}
+
+if ($key.Length -gt 1) {
+    # We have a key, we don't need to guess
+    # This needs to be refactored to remove dupe code, but I wanted to
+    # see if it worked.
+    $keybytes   = GetBytes $key
+    $byteString = ConvertHex-ToByte $hexString
+    $xordBytes = $(for ($i = 0; $i -lt $byteString.Length) {
+        for ($j = 0; $j -lt $keyBytes.Length; $j++) {
+            $byteString[$i] -bxor $keybytes[$j]
+            $i++
+            if ($i -ge $byteString.Length) {
+                continue
+            }
+        }
     })
-    
+
     $DecodedString = $(
         foreach($byte in $xordBytes) {
             [Char]$byte
         }
     ) -join ""
     
-    <#
-    $DecodedString = $($xordBytes | ForEach-Object {
-        [Char]$_
-    }) -join ""
-    #>
-
     $obj.Key = $keyspace[$j]
     $obj.EncryptedText   = $hexString
     $obj.DecryptedText   = $DecodedString.Trim()
@@ -567,18 +582,55 @@ for ($j = 0; $j -lt $keyspace.Length; $j++) {
     $obj.TriGramScore    = [int](Score-TriGrams -DecodedString $DecodedString)
     $obj.TotalScore      = $obj.LetterFreqScore + $obj.BigramScore + $obj.TriGramScore + (100 / $obj.Entropy)
 
-    if ($AllResults) {
-        $obj | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
-    } else {
-        if (-not($HighScoreObj)) {
-            $HighScoreObj = $obj.PSObject.Copy()
+    $obj | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
+
+} else {
+
+    # Should fix keyspace to be more than just Ascii printable characters because it's weaksauce
+    $keyspace   = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~``!@#$%^&*()_-+={}[]\|:;`"'<>,.?/"
+    $byteString = ConvertHex-ToByte $hexString
+    $obj = "" | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
+
+    for ($j = 0; $j -lt $keyspace.Length; $j++) {
+        $keyByte = GetByte $keyspace[$j]
+        $xordBytes = $(for ($i = 0; $i -lt $byteString.length; $i++) {
+            $byteString[$i] -bxor $keyByte
+        })
+    
+        $DecodedString = $(
+            foreach($byte in $xordBytes) {
+                [Char]$byte
+            }
+        ) -join ""
+    
+        <#
+        $DecodedString = $($xordBytes | ForEach-Object {
+            [Char]$_
+        }) -join ""
+        #>
+
+        $obj.Key = $keyspace[$j]
+        $obj.EncryptedText   = $hexString
+        $obj.DecryptedText   = $DecodedString.Trim()
+        $obj.Entropy         = (GetShannonEntropy -DecodedString $DecodedString)
+        $obj.LetterFreqScore = [int](Score-LetterFrequency -DecodedString $DecodedString)
+        $obj.BiGramScore     = [int](Score-BiGrams -DecodedString $DecodedString)
+        $obj.TriGramScore    = [int](Score-TriGrams -DecodedString $DecodedString)
+        $obj.TotalScore      = $obj.LetterFreqScore + $obj.BigramScore + $obj.TriGramScore + (100 / $obj.Entropy)
+
+        if ($AllResults) {
+            $obj | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
         } else {
-            if ($obj.TotalScore -gt $HighScoreObj.TotalScore) {
+            if (-not($HighScoreObj)) {
                 $HighScoreObj = $obj.PSObject.Copy()
+            } else {
+                if ($obj.TotalScore -gt $HighScoreObj.TotalScore) {
+                    $HighScoreObj = $obj.PSObject.Copy()
+                }
             }
         }
     }
-}
-if (-not($AllResults)) {
-    $HighScoreObj | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
+    if (-not($AllResults)) {
+        $HighScoreObj | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
+    }
 }
