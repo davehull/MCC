@@ -21,7 +21,8 @@ LetterFreqScore : 457
 BiGramScore     : 282
 TriGramScore    : 64
 TotalScore      : 803
-This satisfies set 1, challenge 3.
+This satisfies set 1, challenge 3 and can be used in a loop to satisfy
+set 1, challenge 4.
 #>
 
 
