@@ -1,7 +1,8 @@
 ﻿<#
 .SYNOPSIS
-hex2base64.ps1 takes a hexadecimal string and returns a base64 encoded
-string.
+ConvertBase16-ToBase64.ps1 takes a hexadecimal string and returns a 
+base64 encoded string.
+This satisfies set 1, challenge 1.
 #>
 
 
