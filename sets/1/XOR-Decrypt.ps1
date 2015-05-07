@@ -26,7 +26,7 @@ set 1, challenge 4. Here's how:
 $(foreach ($line in Get-Content 4.txt) { 
     .\XOR-Decrypt.ps1 -hexstring $line }) | 
         Sort-Object TotalScore -Descending | Select-Object -First 1
-Key             : 5
+Key             : [ Redacted ]
 EncryptedText   : 7b5a4215415d544115415d5015455447414c155c46155f4058455c5b523f
 DecryptedText   : [ Redacted to keep people honest ]
 Entropy         : 3.98656924646063
@@ -565,7 +565,7 @@ for ($j = 0; $j -lt $keyspace.Length; $j++) {
     $obj.LetterFreqScore = [int](Score-LetterFrequency -DecodedString $DecodedString)
     $obj.BiGramScore     = [int](Score-BiGrams -DecodedString $DecodedString)
     $obj.TriGramScore    = [int](Score-TriGrams -DecodedString $DecodedString)
-    $obj.TotalScore      = $obj.LetterFreqScore + $obj.BigramScore + $obj.TriGramScore
+    $obj.TotalScore      = $obj.LetterFreqScore + $obj.BigramScore + $obj.TriGramScore + (100 / $obj.Entropy)
 
     if ($AllResults) {
         $obj | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
