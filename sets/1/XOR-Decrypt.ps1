@@ -1,8 +1,11 @@
 ﻿<#
 .SYNOPSIS
-XOR-Decrypt.ps1 takes a hexadecimal encoded string and uses the English
-alpha and numeric characters as a key space, XORing the string with 
-each single character and returning a XOR decrypted string.
+XOR-Decrypt.ps1 takes a hexadecimal encrypted string an optional key
+value and returns the decrypted string. If no key is supplied, the
+script will attempt to brute force the key, which the script assumes is
+a single ASCII printable characters as a key space, XORing the string
+with each single character and returning a XOR decrypted string.
+Future work will include brute forcing multi-byte keys.
 .PARAMETER hexString
 A required argument -- the hexadecimal encoded string to be decoded.
 .PARAMETER Key
