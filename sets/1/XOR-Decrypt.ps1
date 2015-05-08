@@ -99,7 +99,6 @@ Param(
     for($i = 0; $i -lt $DecodedUpper.Length; $i++) {
         switch -Regex ($DecodedUpper[$i]) {
             "[^-A-Z0-9!@#$~%^&*)(\[\]\.\\:;<>,.?/'```" ]" {
-                Write-Verbose ("Here on {0} which is {1}." -f $DecodedUpper[$i], (GetByte $DecodedUpper[$i]))
                 $Score -= 100
             }
             "E" {
@@ -608,7 +607,7 @@ if ($key.Length -gt 1) {
 } else {
 
     # Should fix keyspace to be more than just Ascii printable characters because it's weaksauce
-    $keyspace   = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~``!@#$%^&*()_-+={}[]\|:;`"'<>,.?/"
+    $keyspace   = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~``!@#$%^&*()_-+={}[]\|:;`"'<>,.?/ "
     $byteString = ConvertHex-ToByte $hexString
     $obj = "" | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
 
