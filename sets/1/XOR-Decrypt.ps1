@@ -75,7 +75,7 @@ Param(
         [String]$hexString
 )
 
-    $byteString = $(if ($hexString.Length -eq 1) {
+    $byteArray = $(if ($hexString.Length -eq 1) {
         ([System.Convert]::ToByte( $hexString, 16))
     } elseif ($hexString.Length % 2 -eq 0) {
         $hexString -split "([a-fA-F0-9]{2})" | ForEach-Object {
@@ -87,7 +87,7 @@ Param(
         }
     })
 
-    $byteString
+    $byteArray
 }
 
 function Score-LetterFrequency {
@@ -602,7 +602,7 @@ Param(
     $obj | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
 }
 
-$byteString = ConvertHex-ToByte $hexString
+$byteArray = ConvertHex-ToByte $hexString
 
 if ($key.Length -gt 1) {
     # We have a key, we don't need to guess
@@ -610,11 +610,11 @@ if ($key.Length -gt 1) {
     # see if it worked.
     $keybytes   = GetBytes $key
     $xordBytes  = $(
-        for ($i = 0; $i -lt $byteString.Length) {
+        for ($i = 0; $i -lt $byteArray.Length) {
             for ($j = 0; $j -lt $keyBytes.Length; $j++) {
-                $byteString[$i] -bxor $keybytes[$j]
+                $byteArray[$i] -bxor $keybytes[$j]
                 $i++
-                if ($i -ge $byteString.Length) {
+                if ($i -ge $byteArray.Length) {
                     $j = $keyBytes.Length
                 }
             }
@@ -633,8 +633,8 @@ if ($key.Length -gt 1) {
     for ($j = 0; $j -lt $keyspace.Length; $j++) {
         $keyByte = GetByte $keyspace[$j]
         $xordBytes = $(
-            for ($i = 0; $i -lt $byteString.length; $i++) {
-                $byteString[$i] -bxor $keyByte
+            for ($i = 0; $i -lt $byteArray.length; $i++) {
+                $byteArray[$i] -bxor $keyByte
             }
         )
         
