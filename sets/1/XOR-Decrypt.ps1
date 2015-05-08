@@ -565,12 +565,47 @@ Param(
     [System.Text.Encoding]::Default.GetBytes($key)
 }
 
+function PopulateObject {
+Param(
+    [Parameter(Mandatory=$True,Position=0)]
+        [byte[]]$xordbytes,
+    [Parameter(ParameterSetName='unknownKey')]
+        [Char]$keyChar,
+    [Parameter(ParameterSetName='knownKey')]
+        [String]$keyString
+)
+
+    $obj = "" | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
+
+    $DecodedString = $(
+        foreach($byte in $xordBytes) {
+            [Char]$byte
+        }
+    ) -join ""
+    
+    if ($keyChar) {
+        $obj.Key = $keyChar
+    } else {
+        $obj.Key = $keyString
+    }
+    $obj.EncryptedText   = $hexString
+    $obj.DecryptedText   = $DecodedString.Trim()
+    $obj.Entropy         = (GetShannonEntropy -DecodedString $DecodedString)
+    $obj.LetterFreqScore = [int](Score-LetterFrequency -DecodedString $DecodedString)
+    $obj.BiGramScore     = [int](Score-BiGrams -DecodedString $DecodedString)
+    $obj.TriGramScore    = [int](Score-TriGrams -DecodedString $DecodedString)
+    $obj.TotalScore      = $obj.LetterFreqScore + $obj.BigramScore + $obj.TriGramScore + (100 / $obj.Entropy)
+
+    $obj | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
+}
+
+$byteString = ConvertHex-ToByte $hexString
+
 if ($key.Length -gt 1) {
     # We have a key, we don't need to guess
     # This needs to be refactored to remove duped code, but I wanted to
     # see if it worked.
     $keybytes   = GetBytes $key
-    $byteString = ConvertHex-ToByte $hexString
     $xordBytes  = $(
         for ($i = 0; $i -lt $byteString.Length) {
             for ($j = 0; $j -lt $keyBytes.Length; $j++) {
@@ -583,24 +618,7 @@ if ($key.Length -gt 1) {
         }
     )
 
-    $DecodedString = $(
-        foreach($byte in $xordBytes) {
-            if ($byte) {
-                [Char]$byte
-            }
-        }
-    ) -join ""
-    
-    $obj = "" | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
-
-    $obj.Key = $key
-    $obj.EncryptedText   = $hexString
-    $obj.DecryptedText   = $DecodedString.Trim()
-    $obj.Entropy         = (GetShannonEntropy -DecodedString $DecodedString)
-    $obj.LetterFreqScore = [int](Score-LetterFrequency -DecodedString $DecodedString)
-    $obj.BiGramScore     = [int](Score-BiGrams -DecodedString $DecodedString)
-    $obj.TriGramScore    = [int](Score-TriGrams -DecodedString $DecodedString)
-    $obj.TotalScore      = $obj.LetterFreqScore + $obj.BigramScore + $obj.TriGramScore + (100 / $obj.Entropy)
+    $obj = PopulateObject -xordbytes $xordBytes -keyString $key
 
     $obj | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
 
@@ -608,8 +626,6 @@ if ($key.Length -gt 1) {
 
     # Should fix keyspace to be more than just Ascii printable characters because it's weaksauce
     $keyspace   = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~``!@#$%^&*()_-+={}[]\|:;`"'<>,.?/ "
-    $byteString = ConvertHex-ToByte $hexString
-    $obj = "" | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
 
     for ($j = 0; $j -lt $keyspace.Length; $j++) {
         $keyByte = GetByte $keyspace[$j]
@@ -618,21 +634,8 @@ if ($key.Length -gt 1) {
                 $byteString[$i] -bxor $keyByte
             }
         )
-    
-        $DecodedString = $(
-            foreach($byte in $xordBytes) {
-                [Char]$byte
-            }
-        ) -join ""
-    
-        $obj.Key = $keyspace[$j]
-        $obj.EncryptedText   = $hexString
-        $obj.DecryptedText   = $DecodedString.Trim()
-        $obj.Entropy         = (GetShannonEntropy -DecodedString $DecodedString)
-        $obj.LetterFreqScore = [int](Score-LetterFrequency -DecodedString $DecodedString)
-        $obj.BiGramScore     = [int](Score-BiGrams -DecodedString $DecodedString)
-        $obj.TriGramScore    = [int](Score-TriGrams -DecodedString $DecodedString)
-        $obj.TotalScore      = $obj.LetterFreqScore + $obj.BigramScore + $obj.TriGramScore + (100 / $obj.Entropy)
+        
+        $obj = PopulateObject -xordbytes $xordBytes -keyChar $keyspace[$j]
 
         if ($AllResults) {
             $obj | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
