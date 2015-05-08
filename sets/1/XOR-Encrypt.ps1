@@ -55,6 +55,9 @@ $xordBytes = $(for ($i = 0; $i -lt $byteString.length; ) {
     for ($j = 0; $j -lt $bytekey.length; $j++) {
         $byteString[$i] -bxor $bytekey[$j]
         $i++
+        if ($i -ge $byteString.Length) {
+            $j = $bytekey.length
+        }
     }
 }) 
 

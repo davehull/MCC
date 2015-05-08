@@ -23,22 +23,36 @@ EncryptedText   : 093235282e7a292e2833343d7a3d352e7a34357a283f3b293534
 DecryptedText   : Short string got no reason
 Entropy         : 3.38256808327608
 LetterFreqScore : 457
-BiGramScore     : 282
-TriGramScore    : 64
-TotalScore      : 803
+BiGramScore     : 564
+TriGramScore    : 192
+TotalScore      : 1242.56333694935
+
 This satisfies set 1, challenge 3 and can be used in a loop to satisfy
-set 1, challenge 4. Here's how:
+set 1, challenge 4. See the next EXAMPLE section for details.
+.EXAMPLE
+Loop scenario over corpus of potentially encrypted data:
 $(foreach ($line in Get-Content 4.txt) { 
-    .\XOR-Decrypt.ps1 -hexstring $line }) | 
+    XOR-Decrypt.ps1 -hexstring $line }) | 
         Sort-Object TotalScore -Descending | Select-Object -First 1
-Key             : [ Redacted ]
-EncryptedText   : 7b5a4215415d544115415d5015455447414c155c46155f4058455c5b523f
-DecryptedText   : [ Redacted to keep people honest ]
+Key             : [ Redacted to keep people honest ]
+EncryptedText   : [ Redacted ]
+DecryptedText   : [ Redacted ]
 Entropy         : 3.98656924646063
 LetterFreqScore : 337
-BiGramScore     : 357
-TriGramScore    : 177
-TotalScore      : 871
+BiGramScore     : 714
+TriGramScore    : 531
+TotalScore      : 1607.08422501096
+.EXAMPLE
+Known key scenario:
+XOR-Decrypt.ps1 -hexString 36190f580f1b090107014e42140c1e5509550752 -key "fun!"
+Key             : fun!
+EncryptedText   : 36190f580f1b090107014e42140c1e5509550752
+DecryptedText   : Playing at crypto is
+Entropy         : 3.68418371977919
+LetterFreqScore : 305
+BiGramScore     : 362
+TriGramScore    : 144
+TotalScore      : 838.143054637349
 #>
 
 
@@ -85,6 +99,7 @@ Param(
     for($i = 0; $i -lt $DecodedUpper.Length; $i++) {
         switch -Regex ($DecodedUpper[$i]) {
             "[^-A-Z0-9!@#$~%^&*)(\[\]\.\\:;<>,.?/'```" ]" {
+                Write-Verbose ("Here on {0} which is {1}." -f $DecodedUpper[$i], (GetByte $DecodedUpper[$i]))
                 $Score -= 100
             }
             "E" {
@@ -553,27 +568,33 @@ Param(
 
 if ($key.Length -gt 1) {
     # We have a key, we don't need to guess
-    # This needs to be refactored to remove dupe code, but I wanted to
+    # This needs to be refactored to remove duped code, but I wanted to
     # see if it worked.
     $keybytes   = GetBytes $key
     $byteString = ConvertHex-ToByte $hexString
-    $xordBytes = $(for ($i = 0; $i -lt $byteString.Length) {
-        for ($j = 0; $j -lt $keyBytes.Length; $j++) {
-            $byteString[$i] -bxor $keybytes[$j]
-            $i++
-            if ($i -ge $byteString.Length) {
-                continue
+    $xordBytes  = $(
+        for ($i = 0; $i -lt $byteString.Length) {
+            for ($j = 0; $j -lt $keyBytes.Length; $j++) {
+                $byteString[$i] -bxor $keybytes[$j]
+                $i++
+                if ($i -ge $byteString.Length) {
+                    $j = $keyBytes.Length
+                }
             }
         }
-    })
+    )
 
     $DecodedString = $(
         foreach($byte in $xordBytes) {
-            [Char]$byte
+            if ($byte) {
+                [Char]$byte
+            }
         }
     ) -join ""
     
-    $obj.Key = $keyspace[$j]
+    $obj = "" | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
+
+    $obj.Key = $key
     $obj.EncryptedText   = $hexString
     $obj.DecryptedText   = $DecodedString.Trim()
     $obj.Entropy         = (GetShannonEntropy -DecodedString $DecodedString)
@@ -593,9 +614,11 @@ if ($key.Length -gt 1) {
 
     for ($j = 0; $j -lt $keyspace.Length; $j++) {
         $keyByte = GetByte $keyspace[$j]
-        $xordBytes = $(for ($i = 0; $i -lt $byteString.length; $i++) {
-            $byteString[$i] -bxor $keyByte
-        })
+        $xordBytes = $(
+            for ($i = 0; $i -lt $byteString.length; $i++) {
+                $byteString[$i] -bxor $keyByte
+            }
+        )
     
         $DecodedString = $(
             foreach($byte in $xordBytes) {
@@ -603,12 +626,6 @@ if ($key.Length -gt 1) {
             }
         ) -join ""
     
-        <#
-        $DecodedString = $($xordBytes | ForEach-Object {
-            [Char]$_
-        }) -join ""
-        #>
-
         $obj.Key = $keyspace[$j]
         $obj.EncryptedText   = $hexString
         $obj.DecryptedText   = $DecodedString.Trim()
