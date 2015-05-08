@@ -35,6 +35,20 @@ Param(
     [System.Convert]::ToString($byte,2).PadLeft(8,'0') 
 }
 
+function CountBits {
+Param(
+    [Parameter(Mandatory=$True,Position=0,ValueFromPipeLine=$True)]
+        [string]$byte
+)
+    $count = 0
+    for ($i = 0; $i -lt $byte.Length; $i++) {
+        if ($byte[$i] -eq '1') {
+            $count++
+        }
+    }
+    $count        
+}
+
 function GetHammingDistance {
 Param(
     [Parameter(Mandatory=$True,Position=0,ValueFromPipeLine=$True)]
@@ -64,11 +78,14 @@ if ($String1.Length -ne $String2.Length) {
 $byteArray1 = GetBytes $String1
 $byteArray2 = GetBytes $String2
 
+<# 
+Originally I was passing the bit strings below to GetHammingDistance
+above, but then I realized that I could -bxor the bytes, then count the
+number of 1 bits in the result and get the same result, just slightly
+faster.
+#>
 $HammingDistance = 0
 for ($i = 0; $i -lt $byteArray1.Count; $i++) {
-    $bits1 = GetBits $byteArray1[$i]
-    $bits2 = GetBits $byteArray2[$i]
-
-    $HammingDistance += GetHammingDistance -HDString1 $bits1 -HDString2 $bits2
+    $HammingDistance += CountBits( GetBits ($byteArray1[$i] -bxor $byteArray2[$i]))
 }
 $HammingDistance
