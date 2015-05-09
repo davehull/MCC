@@ -35,57 +35,32 @@ Param(
     [System.Convert]::ToString($byte,2).PadLeft(8,'0') 
 }
 
-function CountBits {
-Param(
-    [Parameter(Mandatory=$True,Position=0,ValueFromPipeLine=$True)]
-        [string]$byte
-)
-    $count = 0
-    for ($i = 0; $i -lt $byte.Length; $i++) {
-        if ($byte[$i] -eq '1') {
-            $count++
-        }
-    }
-    $count        
-}
-
 function GetHammingDistance {
 Param(
-    [Parameter(Mandatory=$True,Position=0,ValueFromPipeLine=$True)]
-        [String]$HDString1,
-    [Parameter(Mandatory=$True,Position=1,ValueFromPipeLine=$True)]
-        [String]$HDString2
+    [Parameter(Mandatory=$True,Position=0)]
+        [byte[]]$ByteArray1,
+    [Parameter(Mandatory=$True,Position=1)]
+        [byte[]]$ByteAttay2
 )
-    if ($HDString1.Length -ne $HDString2.Length) {
-        Write-Error ("Input strings to GetHammingDistance function must be the same length. Quitting.")
+    if ($ByteArray1.Count -ne $ByteAttay2.Count) {
+        Write-Error ("Hamming Distance can't be calculated because byte arrays are different lengths. Quitting.")
         Exit
-    }
+    } else {
+        $count = 0
+        for ($i = 0; $i -lt $ByteArray1.Count; $i++) {
+            $bits = (GetBits ($ByteArray1[$i] -bxor $ByteAttay2[$i]))
 
-    $Difference = 0
-    for ($i = 0; $i -lt $HDString1.Length; $i++) {
-        if ($HDString1[$i] -ne $HDString2[$i]) {
-            $Difference++
+            for ($j = 0; $j -lt $bits.Length; $j++) {
+                if ($bits[$j] -eq '1') {
+                    $count++
+                }
+            }
         }
+        $count        
     }
-    $Difference
-}
-
-if ($String1.Length -ne $String2.Length) {
-    Write-Error ("Hamming Distance can't be calculated because strings are different lengths. Quitting.")
-    Exit
 }
 
 $byteArray1 = GetBytes $String1
 $byteArray2 = GetBytes $String2
 
-<# 
-Originally I was passing the bit strings below to GetHammingDistance
-above, but then I realized that I could -bxor the bytes, then count the
-number of 1 bits in the result and get the same result, just slightly
-faster.
-#>
-$HammingDistance = 0
-for ($i = 0; $i -lt $byteArray1.Count; $i++) {
-    $HammingDistance += CountBits( GetBits ($byteArray1[$i] -bxor $byteArray2[$i]))
-}
-$HammingDistance
+GetHammingDistance $byteArray1 $byteArray2
