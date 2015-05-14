@@ -30,10 +30,15 @@ TotalScore      :
 Param(
     [Parameter(Mandatory=$False,Position=2)]
         [int]$MaxKeySize=20,
+    [Parameter(Mandatory=$False,Position=3)]
+        [int]$MaxSamples=2,
     [Parameter(ParameterSetName="String",Mandatory=$False,Position=0)]
         [String]$String,
     [Parameter(ParameterSetName="File",Mandatory=$False,Position=1)]
-        [String]$File
+        [String]$File,
+    [Parameter(Mandatory=$False,Position=4)]
+        [ValidateSet("base16","base64")]
+        [String]$Encoding="base16"
 )
 
 function GetBytes {
@@ -60,8 +65,8 @@ Param(
         [byte[]]$ByteArray2
 )
     if ($ByteArray1.Count -ne $ByteArray2.Count) {
-        Write-Error ("Hamming Distance can't be calculated because byte arrays are different lengths. Quitting.")
-        Exit
+        Write-Error ("Hamming Distance can't be calculated because byte arrays are different lengths, {0} and {1}." -f $ByteArray1.Count, $ByteArray2.Count)
+        return $False
     } else {
         $count = 0
         for ($i = 0; $i -lt $ByteArray1.Count; $i++) {
@@ -78,6 +83,8 @@ Param(
 }
 
 function GetCountBytes {
+# Takes a byte array, a number of bytes and a starting index in the
+# array, returns the number of bytes requested as an array of bytes
 Param(
     [Parameter(Mandatory=$True,Position=0)]
         [byte[]]$ByteArray,
@@ -99,17 +106,63 @@ Param(
     $RetByteArray
 }
 
+function ConvertBase16-ToByte {
+Param(
+    [Parameter(Mandatory=$True,Position=0)]
+        [String]$base16String
+)
 
-[byte[]]$CipherByteArray,[byte[]]$FirstKeySz,[byte[]]$SecondKeySz = @()
+    $byteString = $(if ($base16String.Length -eq 1) {
+        ([System.Convert]::ToByte( $base16String, 16))
+    } elseif ($base16String.Length % 2 -eq 0) {
+        $base16String -split "([a-fA-F0-9]{2})" | ForEach-Object {
+            if ($_) {
+                $ByteInbase16 = [String]::Format("{0:D}", $_)
+                $Paddedbase16 = $ByteInbase16.PadLeft(2,"0")
+                [System.Convert]::ToByte( $Paddedbase16, 16 )
+            }
+        }
+    })
+
+    $byteString
+}
+
+function ConvertBase64-ToByte {
+Param(
+    [Parameter(Mandatory=$True,Position=0)]
+        [String]$base64String
+)
+    # Takes a Base64 encoded string and returns a byte array
+    [System.Convert]::FromBase64String($base64String)
+}
+
+[byte[]]$CipherByteArray,[byte[]]$sample = @()
 
 switch ($PSCmdlet.ParameterSetName) {
     "String" {
-        $CipherByteArray = GetBytes $String
+
+        switch ($Encoding) {
+            "base16" {
+                $CipherByteArray = ConvertBase16-ToByte -base16String $String
+            }
+            "base64" {
+               $CipherByteArray = ConvertBase64-ToByte -base64String $String
+            }
+        }
     }
     "File" {
         if ($Path = Resolve-Path $File) {
             $File = ls $Path
-            $CipherByteArray = [System.IO.File]::ReadAllBytes($File)
+            $FileByteString = ([System.IO.File]::ReadAllBytes($File)) -join ""
+
+            switch ($Encoding) {
+                "base16" {
+                    $CipherByteArray = ConvertBase16-ToByte -base16String $FileByteString
+                }
+                "base64" {
+                    $CipherByteArray = ConvertBase64-ToByte -base64String $FileByteString
+                }
+            }
         }
     }
     Default {
@@ -117,32 +170,19 @@ switch ($PSCmdlet.ParameterSetName) {
     }
 }
 
+for ($KeySize = 2; $KeySize -le $MaxKeySize; $KeySize++) {
+    $HDs = @()
 
-
-$obj = "" | Select-Object KeySize,FirstBytes,SecondBytes,HammingDistance,Normalized
-
-[int]$start = 0
-
-for ($i = 1; $i -le $MaxKeySize; $i++) {
-
-    $count = $i
-
-    $obj.KeySize = $i
-
-    $FirstKeySz  = GetCountBytes $CipherByteArray $count $start
-    $obj.FirstBytes = $FirstKeySz -join ":"
-    
-    $start = [int]($count + $start)
-
-    $SecondKeySz = GetCountBytes $CipherByteArray $count $start
-    $obj.SecondBytes = $SecondKeySz -join ":"
-
-    $HD = GetHammingDistance $FirstKeySz $SecondKeySz
-    $obj.HammingDistance = $HD
-
-    $Normalized = $HD / $i
-    $obj.Normalized = $Normalized
-
-    $obj | Select-Object KeySize,FirstBytes,SecondBytes,HammingDistance,Normalized
-    $start = 0
+    for ($i = 0; $i -lt (($CipherByteArray.Count / $KeySize) - 1); $i++) {
+        $ByteArray1 = $CipherByteArray[($KeySize * $i)..($KeySize * ($i + 1))]
+        $ByteArray2 = $CipherByteArray[($KeySize * ($i + 1))..($KeySize * ($i + 2))]
+        if ($ByteArray1.Count -eq $ByteArray2.Count) {
+            $HDs += ((GetHammingDistance $ByteArray1 $ByteArray2) / $KeySize)
+        }
+    }
+    $AvgDist = $HDs | Measure-Object -Average | Select-Object -ExpandProperty Average
+    $obj = "" | Select-Object KeySize,AvgDist
+    $obj.KeySize = $KeySize
+    $obj.AvgDist = $AvgDist
+    $obj | Select-Object KeySize,AvgDist
 }
