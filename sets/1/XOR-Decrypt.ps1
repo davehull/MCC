@@ -6,7 +6,7 @@ script will attempt to brute force the key, which the script assumes is
 a single ASCII printable characters as a key space, XORing the string
 with each single character and returning a XOR decrypted string.
 Future work will include brute forcing multi-byte keys.
-.PARAMETER hexString
+.PARAMETER String
 A required argument -- the hexadecimal encoded string to be decoded.
 .PARAMETER Key
 An optional key to use for decryption, without this parameter, the
@@ -20,7 +20,7 @@ highest score -- the object with the decrypted string that's most
 likely to be sensible English text based on letter frequency, bigrams
 and trigrams. Oh my!
 .EXAMPLE
-XOR-Decrypt.ps1 -hexString 093235282e7a292e2833343d7a3d352e7a34357a283f3b293534
+XOR-Decrypt.ps1 -String 093235282e7a292e2833343d7a3d352e7a34357a283f3b293534
 Key             : Z
 EncryptedText   : 093235282e7a292e2833343d7a3d352e7a34357a283f3b293534
 DecryptedText   : Short string got no reason
@@ -35,7 +35,7 @@ set 1, challenge 4. See the next EXAMPLE section for details.
 .EXAMPLE
 Loop scenario over corpus of potentially encrypted data:
 $(foreach ($line in Get-Content 4.txt) { 
-    XOR-Decrypt.ps1 -hexstring $line }) | 
+    XOR-Decrypt.ps1 -String $line }) | 
         Sort-Object TotalScore -Descending | Select-Object -First 1
 Key             : [ Redacted to keep people honest ]
 EncryptedText   : [ Redacted ]
@@ -47,7 +47,7 @@ TriGramScore    : 531
 TotalScore      : 1607.08422501096
 .EXAMPLE
 Known key scenario:
-XOR-Decrypt.ps1 -hexString 36190f580f1b090107014e42140c1e5509550752 -key "fun!"
+XOR-Decrypt.ps1 -String 36190f580f1b090107014e42140c1e5509550752 -key "fun!"
 Key             : fun!
 EncryptedText   : 36190f580f1b090107014e42140c1e5509550752
 DecryptedText   : Playing at crypto is
@@ -62,33 +62,16 @@ TotalScore      : 838.143054637349
 [CmdletBinding()]
 Param(
     [Parameter(Mandatory=$True,Position=0)]
-        [String]$hexString,
+        [String]$String,
     [Parameter(Mandatory=$False,Position=1)]
         [Switch]$AllResults,
     [Parameter(Mandatory=$False,Position=2)]
-        [String]$key
+        [String]$key,
+    [Parameter(Mandatory=$False,Position=3)]
+        [ValidateSet("hex","base64")]
+        [String]$Encoding="hex"
 )
 
-function ConvertHex-ToByte {
-Param(
-    [Parameter(Mandatory=$True,Position=0)]
-        [String]$hexString
-)
-
-    $byteArray = $(if ($hexString.Length -eq 1) {
-        ([System.Convert]::ToByte( $hexString, 16))
-    } elseif ($hexString.Length % 2 -eq 0) {
-        $hexString -split "([a-fA-F0-9]{2})" | ForEach-Object {
-            if ($_) {
-                $ByteInHex = [String]::Format("{0:D}", $_)
-                $PaddedHex = $ByteInHex.PadLeft(2,"0")
-                [System.Convert]::ToByte( $PaddedHex, 16 )
-            }
-        }
-    })
-
-    $byteArray
-}
 
 function Score-LetterFrequency {
 Param(
@@ -591,7 +574,7 @@ Param(
     } else {
         $obj.Key = $keyString
     }
-    $obj.EncryptedText   = $hexString
+    $obj.EncryptedText   = $String
     $obj.DecryptedText   = $DecodedString.Trim()
     $obj.Entropy         = (GetShannonEntropy -DecodedString $DecodedString)
     $obj.LetterFreqScore = [int](Score-LetterFrequency -DecodedString $DecodedString)
@@ -602,7 +585,60 @@ Param(
     $obj | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
 }
 
-$byteArray = ConvertHex-ToByte $hexString
+function ConvertHex-ToByte {
+Param(
+    [Parameter(Mandatory=$True,Position=0)]
+        [String]$hexString
+)
+    $byteArray = $(if ($hexString.Length -eq 1) {
+        ([System.Convert]::ToByte( $hexString, 16))
+    } elseif ($hexString.Length % 2 -eq 0) {
+        $hexString -split "([a-fA-F0-9]{2})" | ForEach-Object {
+            if ($_) {
+                $ByteInHex = [String]::Format("{0:D}", $_)
+                $PaddedHex = $ByteInHex.PadLeft(2,"0")
+                [System.Convert]::ToByte( $PaddedHex, 16 )
+            }
+        }
+    })
+    $byteArray
+}
+
+function ConvertBase16-ToBase64 {
+Param(
+    [Parameter(Mandatory=$True,Position=0)]
+        [String]$hexString
+)
+    $byteArray = $(if ( $hexString.Length -eq 1 ) {
+        ([System.Convert]::ToByte( $hexString, 16 ))
+    } elseif ( $hexString.Length % 2 -eq 0 ) {
+        $hexString -split "([a-fA-F0-9]{2})" | ForEach-Object {
+            if ($_) {
+                [System.Convert]::ToByte( $_, 16 )
+            }
+        }
+    })
+    [System.Convert]::ToBase64String($byteArray)
+}
+
+function ConvertBase64-ToByte {
+Param(
+    [Parameter(Mandatory=$True,Position=0)]
+        [String]$base64String
+)
+    # Takes a Base64 encoded string and returns a byte array
+    [System.Convert]::FromBase64String($base64String)
+}
+
+switch ($Encoding) {
+    "hex" {
+        $byteArray = ConvertHex-ToByte -hexString $String
+    }
+    "base64" {
+        $byteArray = ConvertBase64-ToByte -base64String $String
+    }
+}
+
 
 if ($key.Length -gt 1) {
     # We have a key, we don't need to guess

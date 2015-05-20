@@ -31,7 +31,7 @@ Param(
     [Parameter(Mandatory=$False,Position=2)]
         [int]$MaxKeySize=20,
     [Parameter(Mandatory=$False,Position=3)]
-        [int]$MaxSamples=2,
+        [int]$MaxSamples=$False,
     [Parameter(ParameterSetName="String",Mandatory=$False,Position=0)]
         [String]$String,
     [Parameter(ParameterSetName="File",Mandatory=$False,Position=1)]
@@ -136,6 +136,26 @@ Param(
     [System.Convert]::FromBase64String($base64String)
 }
 
+function GetGreatestCommonDenominator {
+Param (
+    [Parameter(Mandatory=$True,Position=0)]
+        [int]$val1,
+    [Parameter(Mandatory=$True,Position=1)]
+        [int]$val2
+)
+    # We shouldn't have any negative values for Hamming
+    # Distances, but this is a generalized algorithm
+    $val1,$val2 = ($val1,$val2 | ForEach-Object {
+        [math]::Abs($_)
+    })
+
+    if ($val2 -eq 0) {
+        $val1
+    } else {
+        GetGreatestCommonDenominator -val1 $val2 -val2 ($val1 % $val2)
+    }        
+}
+
 [byte[]]$CipherByteArray,[byte[]]$sample = @()
 
 switch ($PSCmdlet.ParameterSetName) {
@@ -153,7 +173,7 @@ switch ($PSCmdlet.ParameterSetName) {
     "File" {
         if ($Path = Resolve-Path $File) {
             $File = ls $Path
-            $FileByteString = ([System.IO.File]::ReadAllBytes($File)) -join ""
+            $FileByteString = ([System.IO.File]::ReadAllText($File)) -join ""
 
             switch ($Encoding) {
                 "base16" {
@@ -170,19 +190,74 @@ switch ($PSCmdlet.ParameterSetName) {
     }
 }
 
+if (-not($MaxSamples)) {
+    $NoUserMaxSamples = $True
+}
+
+$CipherByteCount = $CipherByteArray.Count
+$MaxAllowableSamples = [int]($CipherByteCount / 2) - 1
+$MaxAllowableKeySize = [int]($CipherByteCount)
+
+if ($MaxSamples -gt $MaxAllowableSamples) {
+    Write-Verbose ("-MaxSamples of {0} was too large. Setting to {1}, ((CipherByteArray.Count / min(keysize)) - 1." -f $MaxSamples, $MaxAllowableSamples)
+    $MaxSamples = $MaxAllowableSamples
+}
+
+if ($MaxKeySize -gt $MaxAllowableKeySize) {
+    Write-Verbose ("-MaxKeySize of {0} exceeds the length of the ciphertext. Setting to {1}, [int](CipherByteArray.Count)." -f $MaxKeySize, $CipherByteArray.Count)
+    $MaxKeySize = $MaxAllowableKeySize
+}
+
+$objs = @()
+
 for ($KeySize = 2; $KeySize -le $MaxKeySize; $KeySize++) {
     $HDs = @()
 
-    for ($i = 0; $i -lt (($CipherByteArray.Count / $KeySize) - 1); $i++) {
-        $ByteArray1 = $CipherByteArray[($KeySize * $i)..($KeySize * ($i + 1))]
-        $ByteArray2 = $CipherByteArray[($KeySize * ($i + 1))..($KeySize * ($i + 2))]
+    # Write-Verbose ("Keysize is {0}." -f $KeySize)
+
+    if ($NoUserMaxSamples) {
+        $MaxSamples = (($CipherByteArray.Count / $KeySize) - 1)
+    }
+
+    for ($i = 0; $i -lt $MaxSamples; $i++) {
+        $Start = $KeySize * $i
+        $End   = $KeySize * ($i + 1)
+        # Write-Verbose ("Start is {0}. End is {1}. CipherByteCount is {2}." -f $Start, $End, $CipherByteCount)
+        if ($End -gt $CipherByteCount) {
+            # Write-Verbose ("Index too high, can't read {0} bytes from CipherByteArray. Continuing." -f $End)
+            continue
+        }
+        $ByteArray1 = $CipherByteArray[$Start..$End]
+        $Start = $End
+        $End   = $KeySize * ($i + 2)
+        # Write-Verbose ("Start is {0}. End is {1}. CipherByteCount is {2}." -f $Start, $End, $CipherByteCount)
+        if ($End -gt $CipherByteCount) {
+            # Write-Verbose ("Index too high, can't read {0} bytes from CipherByteArray. Continuing." -f $End)
+            continue
+        }
+        $ByteArray2 = $CipherByteArray[$Start..$End]
         if ($ByteArray1.Count -eq $ByteArray2.Count) {
             $HDs += ((GetHammingDistance $ByteArray1 $ByteArray2) / $KeySize)
         }
     }
-    $AvgDist = $HDs | Measure-Object -Average | Select-Object -ExpandProperty Average
-    $obj = "" | Select-Object KeySize,AvgDist
-    $obj.KeySize = $KeySize
-    $obj.AvgDist = $AvgDist
-    $obj | Select-Object KeySize,AvgDist
+    if ($HDs) {
+        $AvgDist = $HDs | Measure-Object -Average | Select-Object -ExpandProperty Average
+        $obj = "" | Select-Object KeySize,AvgDist
+        $obj.KeySize = $KeySize
+        $obj.AvgDist = $AvgDist
+        $objs += $obj
+        $NoUserMaxSamples = $True
+    }
+}
+$i = 1
+$objs | sort AvgDist | ForEach-Object {
+    $obj = "" | Select-Object Rank,RankKeySizeRatio,KeySize,KeySizeAvgDistRatio,AvgDist,Total
+    $obj.Rank = $i
+    $obj.RankKeySizeRatio = $_.KeySize / $i
+    $obj.KeySize = $_.KeySize
+    $obj.KeySizeAvgDistRatio = $_.KeySize / $_.AvgDist
+    $obj.AvgDist = $_.AvgDist
+    $obj.Total = $obj.RankKeySizeRatio + $obj.Rank + $obj.KeySize # + ($obj.RankKeySizeRatio * $obj.KeySizeAvgDistRatio * $obj.AvgDist)
+    $obj | Select-Object Rank,RankKeySizeRatio,KeySize,KeySizeAvgDistRatio,AvgDist,Total
+    $i++
 }

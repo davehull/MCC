@@ -19,7 +19,10 @@ Param(
     [Parameter(Mandatory=$True,Position=0)]
         [String]$String,
     [Parameter(Mandatory=$True,Position=1)]
-        [String]$key
+        [String]$key,
+    [Parameter(Mandatory=$False,Position=2)]
+        [ValidateSet("base16","base64","byte")]
+        [string]$Format="base16"
 )
 
 function GetBytes {
@@ -41,11 +44,24 @@ $xordBytes = $(for ($i = 0; $i -lt $byteString.length; ) {
             $j = $bytekey.length
         }
     }
-}) 
+})
 
-$PaddedHex = ""
-$xordBytes | ForEach-Object {
-    $ByteInHex = [String]::Format("{0:X}", $_)
-    $PaddedHex += $ByteInHex.PadLeft(2,"0")
+switch ($Format) {
+    "base16" {
+        $PaddedHex = ""
+        $xordBytes | ForEach-Object {
+            $ByteInHex = [String]::Format("{0:X}", $_)
+            $PaddedHex += $ByteInHex.PadLeft(2,"0")
+        }
+        $PaddedHex.ToLower()
+    }
+    "base64" {
+        [System.Convert]::ToBase64String($xordBytes)
+    }
+    "byte" {
+        $xordBytes | ForEach-Object {
+            $Byte = [String]::Format("{0:d}",$_)
+            $Byte.PadLeft(2,"0")
+        }
+    }
 }
-$PaddedHex.ToLower()
