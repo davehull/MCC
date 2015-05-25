@@ -57,6 +57,52 @@ Param(
     [System.Convert]::ToString($byte,2).PadLeft(8,'0') 
 }
 
+
+function GetHammingDistance {
+Param(
+    [Parameter(Mandatory=$True,Position=0)]
+        [byte[]]$ByteArray1,
+    [Parameter(Mandatory=$True,Position=1)]
+        [byte[]]$ByteArray2,
+    [Parameter(Mandatory=$True,Position=2)]
+        [hashtable]$BytePairDist
+)
+    if ($ByteArray1.Count -ne $ByteArray2.Count) {
+        Write-Error ("Hamming Distance can't be calculated because byte arrays are different lengths, {0} and {1}." -f $ByteArray1.Count, $ByteArray2.Count)
+        return $False
+    } else {
+        $Total = 0
+        for ($i = 0; $i -lt $ByteArray1.Count; $i++) {
+            $bitCount = 0
+            # $pair and $rpair are equivalent (10:15 -eq 15:10)
+            $pair  = $(($ByteArray1[$i],$ByteArray2[$i]) -join ":")
+            $rpair = $(($ByteArray2[$i],$ByteArray1[$i]) -join ":")
+            if ($pair -eq $rpair) { 
+                # Write-Verbose ("pair is {0}, Hamming Distance is 0" -f $pair)
+                # Hamming Distance between identical bytes is 0
+                continue
+            } elseif ($BytePairDist.Contains($pair) -or $BytePairDist.Contains($rpair)) {
+                $bitCount += $BytePairDist[$pair]
+                # Write-Verbose ("pair is {0}, Hamming Distance is {1}" -f $pair, $bitCount)
+            } else {
+                $bits = (GetBits ($ByteArray1[$i] -bxor $ByteArray2[$i]))
+
+                for ($j = 0; $j -lt $bits.Length; $j++) {
+                    if ($bits[$j] -eq '1') {
+                        $bitCount++
+                    }
+                }
+                # Write-Verbose ("pair is {0}, Hamming Distance is {1}" -f $pair, $bitCount)
+                $BytePairDist.Add($pair,$bitCount)
+                $BytePairDist.Add($rpair,$bitCount)
+            }
+            $Total += $bitCount
+        }
+        $Total
+    }
+}
+
+<#
 function GetHammingDistance {
 Param(
     [Parameter(Mandatory=$True,Position=0)]
@@ -81,6 +127,7 @@ Param(
         $count        
     }
 }
+#>
 
 function GetCountBytes {
 # Takes a byte array, a number of bytes and a starting index in the
@@ -209,55 +256,81 @@ if ($MaxKeySize -gt $MaxAllowableKeySize) {
 }
 
 $objs = @()
+$BytePairDist = @{}
 
-for ($KeySize = 2; $KeySize -le $MaxKeySize; $KeySize++) {
+for ($CalcKeySize = 2; $CalcKeySize -le $MaxKeySize; $CalcKeySize++) {
     $HDs = @()
 
-    # Write-Verbose ("Keysize is {0}." -f $KeySize)
+    # Write-Verbose ("Keysize is {0}." -f $CalcKeySize)
 
     if ($NoUserMaxSamples) {
-        $MaxSamples = (($CipherByteArray.Count / $KeySize) - 1)
+        $MaxSamples = (($CipherByteArray.Count / $CalcKeySize) - 1)
     }
 
     for ($i = 0; $i -lt $MaxSamples; $i++) {
-        $Start = $KeySize * $i
-        $End   = $KeySize * ($i + 1)
+        $Start = ($CalcKeySize - 1) * $i
+        $End   = ($CalcKeySize - 1) * ($i + 1)
         # Write-Verbose ("Start is {0}. End is {1}. CipherByteCount is {2}." -f $Start, $End, $CipherByteCount)
         if ($End -gt $CipherByteCount) {
             # Write-Verbose ("Index too high, can't read {0} bytes from CipherByteArray. Continuing." -f $End)
-            continue
+            # continue
         }
         $ByteArray1 = $CipherByteArray[$Start..$End]
-        $Start = $End
-        $End   = $KeySize * ($i + 2)
+        $Start = $End + 1
+        $End   = ($CalcKeySize - 1) * ($i + 2) + 1
         # Write-Verbose ("Start is {0}. End is {1}. CipherByteCount is {2}." -f $Start, $End, $CipherByteCount)
         if ($End -gt $CipherByteCount) {
-            # Write-Verbose ("Index too high, can't read {0} bytes from CipherByteArray. Continuing." -f $End)
-            continue
+            Write-Verbose ("Index too high, can't read {0} bytes from CipherByteArray. Continuing." -f $End)
+            # continue
         }
         $ByteArray2 = $CipherByteArray[$Start..$End]
         if ($ByteArray1.Count -eq $ByteArray2.Count) {
-            $HDs += ((GetHammingDistance $ByteArray1 $ByteArray2) / $KeySize)
+            $HDs += (GetHammingDistance $ByteArray1 $ByteArray2 $BytePairDist)
+            # Write-Verbose ("HDs : {0}, Normalized : {1}, ByteArray1 : {2}, ByteArray2 : {3}" -f $HDs[$i], ($HDs[$i] / $ByteArray1.Count), ($ByteArray1 -join ","), ($ByteArray2 -join ",")) 
+            # Write-Verbose ("ByteArrays are: {0} and {1}" -f ($ByteArray1 -join ":"), ($ByteArray2 -join ":"))
+            # if (($HDs.Count % 450) -eq 0) { Write-Verbose ("HDs is {0}. ByteArray.Count is {1}" -f ($HDs -join ","), $ByteArray1.Count) }
+            # if (($ByteArray1.Count % 29) -eq 0) { Write-Verbose ("HDs : {0}, Normalized : {1}, ByteArray1 : {2}, ByteArray2 : {3}" -f $HDs[$i], ($HDs[$i] / $ByteArray1.Count), ($ByteArray1 -join ","), ($ByteArray2 -join ",")) }
         }
     }
     if ($HDs) {
-        $AvgDist = $HDs | Measure-Object -Average | Select-Object -ExpandProperty Average
-        $obj = "" | Select-Object KeySize,AvgDist
-        $obj.KeySize = $KeySize
-        $obj.AvgDist = $AvgDist
+        Write-Verbose ("HD: {0}" -f ($HDs -join ","))
+        $AvgHD = ($HDs | Measure-Object -Average | Select-Object -ExpandProperty Average)
+        $NAvgHD = $AvgHD / $CalcKeySize
+        $obj = "" | Select-Object CalcKeySize,AvgHD,NAvgHD
+        $obj.CalcKeySize = $CalcKeySize
+        $obj.AvgHD = $AvgHD
+        $obj.NAvgHD = $NAvgHD
         $objs += $obj
-        $NoUserMaxSamples = $True
     }
 }
-$i = 1
-$objs | sort AvgDist | ForEach-Object {
-    $obj = "" | Select-Object Rank,RankKeySizeRatio,KeySize,KeySizeAvgDistRatio,AvgDist,Total
-    $obj.Rank = $i
-    $obj.RankKeySizeRatio = $_.KeySize / $i
-    $obj.KeySize = $_.KeySize
-    $obj.KeySizeAvgDistRatio = $_.KeySize / $_.AvgDist
-    $obj.AvgDist = $_.AvgDist
-    $obj.Total = $obj.RankKeySizeRatio + $obj.Rank + $obj.KeySize # + ($obj.RankKeySizeRatio * $obj.KeySizeAvgDistRatio * $obj.AvgDist)
-    $obj | Select-Object Rank,RankKeySizeRatio,KeySize,KeySizeAvgDistRatio,AvgDist,Total
-    $i++
+    
+$a = 1
+$AvgHDSortObj = @()
+ 
+# Sort objects on average Hamming Distance, set AvgHDRank and
+# populate new object array, $AvgHDSortObj
+$objs | sort AvgHD | ForEach-Object {
+   $obj = "" | Select-Object AvgHDRank,CalcKeySize,AvgHD,NAvgHD
+   $obj.AvgHDRank = $a
+   $obj.CalcKeySize = $_.CalcKeySize
+   $obj.AvgHD = $_.AvgHD
+   $obj.NAvgHD = $_.NAvgHD
+   $a++
+   $AvgHDSortObj += $obj
 }
+    
+$a = 1
+
+# Now sort $AvgHDSortObj array of objects by Normalized Average Hamming Distance and
+# assign a ranking
+# $NAvgHDSortObj = @()
+$AvgHDSortObj | sort NAvgHD | ForEach-Object {
+    $obj = "" | Select-Object AvgHDRank,NAvgHDRank,CalcKeySize,AvgHD,NAvgHD
+    $obj.AvgHDRank = $_.AvgHDRank
+    $obj.NAvgHDRank = $a
+    $obj.CalcKeySize = $_.CalcKeySize
+    $obj.AvgHD = $_.AvgHD
+    $obj.NAvgHD = $_.NAvgHD
+    $a++
+    $obj | Select-Object CalcKeySize,AvgHDRank,NAvgHDRank,AvgHD,NAvgHD
+} | Sort-Object NAvgHDRank,CalcKeySize
