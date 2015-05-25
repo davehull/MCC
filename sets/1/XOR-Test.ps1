@@ -9,8 +9,19 @@ Output the actual key size, followed by the normal XOR-Brutr output as csv.
 
 #>
 
+
+[CmdletBinding()]
+Param(
+    [Parameter(Mandatory=$True,Position=0)]
+        [int]$MaxKeySize=10,
+    [Parameter(Mandatory=$False,Position=1)]
+        [int]$MaxSamples
+)
+
+
 # Here's our plaintext
-if ((Get-Random -Maximum 10 -Minimum 1) % 2) {
+switch (Get-Random -Maximum 3 -Minimum 1) {
+    1 {
 $plaintext = @"
 One morning, when Gregor Samsa woke from troubled dreams, he found
 himself transformed in his bed into a horrible vermin.  He lay on
@@ -57,7 +68,8 @@ white spots which he didn't know what to make of; and when he tried
 to feel the place with one of his legs he drew it quickly back
 because as soon as he touched it he was overcome by a cold shudder.
 "@
-} else {
+} 
+    2 {
 $plaintext = @"
 The art of constructing cryptographs or ciphers—intelligible to
 those who know the key and unintelligible to others—has been studied
@@ -115,6 +127,67 @@ hands it passed. But I may confine myself to messages in English, and
 for the present to simple cryptographs and ciphers.
 "@
 }
+    3 {
+$plaintext = @"
+Suzanne Church almost never had to bother with the blue blazer these
+days. Back at the height of the dot-boom, she'd put on her business
+journalist drag -- blazer, blue sailcloth shirt, khaki trousers,
+loafers -- just about every day, putting in her obligatory appearances
+at splashy press-conferences for high-flying IPOs and mergers. These
+days, it was mostly work at home or one day a week at the San Jose
+Mercury News's office, in comfortable light sweaters with loose necks
+and loose cotton pants that she could wear straight to yoga after
+shutting her computer's lid.
+
+Blue blazer today, and she wasn't the only one. There was Reedy from
+the NYT's Silicon Valley office, and Tribbey from the WSJ, and that
+despicable rat-toothed jumped-up gossip columnist from one of the UK
+tech-rags, and many others besides. Old home week, blue blazers fresh
+from the dry-cleaning bags that had guarded them since the last time
+the NASDAQ broke 5,000.
+
+The man of the hour was Landon Kettlewell -- the kind of outlandish
+prep-school name that always seemed a little made up to her -- the new
+CEO and front for the majority owners of Kodak/Duracell. The
+despicable Brit had already started calling them Kodacell. Buying the
+company was pure Kettlewell: shrewd, weird, and ethical in a twisted
+way.
+
+"Why the hell have you done this, Landon?" Kettlewell asked himself
+into his tie-mic. Ties and suits for the new Kodacell execs in the
+room, like surfers playing dress-up. "Why buy two dinosaurs and stick
+'em together? Will they mate and give birth to a new generation of
+less-endangered dinosaurs?"
+
+He shook his head and walked to a different part of the stage,
+thumbing a PowerPoint remote that advanced his slide on the jumbotron
+to a picture of a couple of unhappy cartoon brontos staring desolately
+at an empty nest. "Probably not. But there is a good case for what
+we've just done, and with your indulgence, I'm going to lay it out for
+you now."
+
+"Let's hope he sticks to the cartoons," Rat-Toothed hissed beside
+her. His breath smelled like he'd been gargling turds. He had a
+not-so-secret crush on her and liked to demonstrate his alpha-maleness
+by making half-witticisms into her ear. "They're about his speed."
+
+She twisted in her seat and pointedly hunched over her computer's
+screen, to which she'd taped a thin sheet of polarized plastic that
+made it opaque to anyone shoulder-surfing her. Being a halfway
+attractive woman in Silicon Valley was more of a pain in the ass than
+she'd expected, back when she'd been covering rustbelt shenanigans in
+Detroit, back when there was an auto industry in Detroit.
+
+The worst part was that the Brit's reportage was just spleen-filled
+editorializing on the lack of ethics in the valley's board-rooms (a
+favorite subject of hers, which no doubt accounted for his
+fellow-feeling), and it was also the crux of Kettlewell's schtick. The
+spectacle of an exec who talked ethics enraged Rat-Toothed more than
+the vilest baby-killers. He was the kind of revolutionary who liked
+his firing squads arranged in a circle.
+"@
+}
+}
 
 function GetBits {
 Param(
@@ -137,23 +210,42 @@ Param(
     [Parameter(Mandatory=$True,Position=0)]
         [byte[]]$ByteArray1,
     [Parameter(Mandatory=$True,Position=1)]
-        [byte[]]$ByteArray2
+        [byte[]]$ByteArray2,
+    [Parameter(Mandatory=$True,Position=2)]
+        [hashtable]$BytePairDist
 )
     if ($ByteArray1.Count -ne $ByteArray2.Count) {
         Write-Error ("Hamming Distance can't be calculated because byte arrays are different lengths, {0} and {1}." -f $ByteArray1.Count, $ByteArray2.Count)
         return $False
     } else {
-        $count = 0
+        $Total = 0
         for ($i = 0; $i -lt $ByteArray1.Count; $i++) {
-            $bits = (GetBits ($ByteArray1[$i] -bxor $ByteArray2[$i]))
+            $bitCount = 0
+            # $pair and $rpair are equivalent (10:15 -eq 15:10)
+            $pair  = $(($ByteArray1[$i],$ByteArray2[$i]) -join ":")
+            $rpair = $(($ByteArray2[$i],$ByteArray1[$i]) -join ":")
+            if ($pair -eq $rpair) { 
+                # Write-Verbose ("pair is {0}, Hamming Distance is 0" -f $pair)
+                # Hamming Distance between identical bytes is 0
+                continue
+            } elseif ($BytePairDist.Contains($pair) -or $BytePairDist.Contains($rpair)) {
+                $bitCount += $BytePairDist[$pair]
+                # Write-Verbose ("pair is {0}, Hamming Distance is {1}" -f $pair, $bitCount)
+            } else {
+                $bits = (GetBits ($ByteArray1[$i] -bxor $ByteArray2[$i]))
 
-            for ($j = 0; $j -lt $bits.Length; $j++) {
-                if ($bits[$j] -eq '1') {
-                    $count++
+                for ($j = 0; $j -lt $bits.Length; $j++) {
+                    if ($bits[$j] -eq '1') {
+                        $bitCount++
+                    }
                 }
+                # Write-Verbose ("pair is {0}, Hamming Distance is {1}" -f $pair, $bitCount)
+                $BytePairDist.Add($pair,$bitCount)
+                $BytePairDist.Add($rpair,$bitCount)
             }
+            $Total += $bitCount
         }
-        $count        
+        $Total
     }
 }
 
@@ -179,22 +271,27 @@ Param (
 
 # Here's a key byte array
 [byte[]]$keyArray = @()
+$BytePairDist = @{}
 
 # Convert our plaintext to a byte array
 $byteArray = GetBytes -String $plaintext
 
 if (-not($MaxSamples)) {
     $NoUserMaxSamples = $True
+} else {
+    $NoUserMaxSamples = $False
 }
 
-# set up our loop
-for ($i = 1; $i -le 300; $i++) {
+# In the outter loop here we encrypt our plaintext with a randomly generated key
+for ($i = 2; $i -le $MaxKeySize ; $i++) {
     
     [byte[]]$CipherByteArray,[byte[]]$sample,[byte[]]$keyArray = @()
 
     for ($j = 1; $j -le $i; $j++) {
-        $keyArray += Get-Random -Minimum 0x00 -Maximum 0xFF
+        # $keyArray += Get-Random -Minimum 0x00 -Maximum 0xFF 
+        $keyArray += Get-Random -Minimum 0x20 -Maximum 0x7F # ASCII printables are in 0x20 - 0x7F
     }
+    # Write-Verbose ("KeyArray is {0}" -f ($keyArray -join ":"))
 
     $CipherByteArray = $(
         for ($q = 0; $q -lt $byteArray.Count; ) {
@@ -211,21 +308,22 @@ for ($i = 1; $i -le 300; $i++) {
     $CipherByteCount = $CipherByteArray.Count
     $MaxAllowableSamples = [int]($CipherByteCount / 2) - 1
     $MaxAllowableKeySize = [int]($CipherByteCount)
-    $MaxKeySize = [int]($i * 4)
+    $MaxCalcKeySize = [int]($i * 3)
 
     if ($MaxSamples -gt $MaxAllowableSamples) {
         Write-Verbose ("-MaxSamples of {0} was too large. Setting to {1}, ((CipherByteArray.Count / min(keysize)) - 1." -f $MaxSamples, $MaxAllowableSamples)
         $MaxSamples = $MaxAllowableSamples
     }
 
-    if ($MaxKeySize -gt $MaxAllowableKeySize) {
+    if ($MaxCalcKeySize -gt $MaxAllowableKeySize) {
         Write-Verbose ("-MaxKeySize of {0} exceeds the length of the ciphertext. Setting to {1}, [int](CipherByteArray.Count)." -f $MaxKeySize, $CipherByteArray.Count)
-        $MaxKeySize = $MaxAllowableKeySize
+        $MaxCalcKeySize = $MaxAllowableKeySize
     }
 
     $objs = @()
 
-    for ($CalcKeySize = 2; $CalcKeySize -le $MaxKeySize; $CalcKeySize++) {
+    # The inner loop here uses Hamming Distance to determine probably key size
+    for ($CalcKeySize = 2; $CalcKeySize -le $MaxCalcKeySize; $CalcKeySize++) {
         $HDs = @()
 
         # Write-Verbose ("CalcKeySize is {0}." -f $CalcKeySize)
@@ -234,62 +332,74 @@ for ($i = 1; $i -le 300; $i++) {
             $MaxSamples = (($CipherByteArray.Count / $CalcKeySize) - 1)
         }
 
+        # Write-Verbose ("MaxSamples is {0}" -f $MaxSamples)
         for ($a = 0; $a -lt $MaxSamples; $a++) {
-            $Start = $CalcKeySize * $a
-            $End   = $CalcKeySize * ($a + 1)
+            $Start = ($CalcKeySize - 1) * $a
+            $End   = ($CalcKeySize - 1) * ($a + 1)
             # Write-Verbose ("Start is {0}. End is {1}. CipherByteCount is {2}." -f $Start, $End, $CipherByteCount)
             if ($End -gt $CipherByteCount) {
                 # Write-Verbose ("Index too high, can't read {0} bytes from CipherByteArray. Continuing." -f $End)
-                continue
+                # continue
             }
             $ByteArray1 = $CipherByteArray[$Start..$End]
-            $Start = $End
-            $End   = $CalcKeySize * ($a * 2)
+            $Start = $End + 1
+            $End   = ($CalcKeySize - 1) * ($a + 2) + 1
             # Write-Verbose ("Start is {0}. End is {1}. CipherByteCount is {2}." -f $Start, $End, $CipherByteCount)
             if ($End -gt $CipherByteCount) {
                 # Write-Verbose ("Index too high, can't read {0} bytes from CipherByteArray. Continuing." -f $End)
-                continue
+                # continue
             }
             $ByteArray2 = $CipherByteArray[$Start..$End]
             if ($ByteArray1.Count -eq $ByteArray2.Count) {
-                $HDs += ((GetHammingDistance $ByteArray1 $ByteArray2) / $CalcKeySize)
+                $HDs += ((GetHammingDistance $ByteArray1 $ByteArray2 $BytePairDist))
+                # Write-Verbose ("HDs : {0}, Normalized : {1}, ByteArray1 : {2}, ByteArray2 : {3}" -f $HDs[$a], ($HDs[$a] / $ByteArray1.Count), ($ByteArray1 -join ","), ($ByteArray2 -join ",")) 
+                # Write-Verbose ("ByteArrays are: {0} and {1}" -f ($ByteArray1 -join ":"), ($ByteArray2 -join ":"))
+                # if (($HDs.Count % 450) -eq 0) { Write-Verbose ("HDs is {0}. ByteArray.Count is {1}" -f ($HDs -join ","), $ByteArray1.Count) }
             }
         }
         if ($HDs) {
-            $AvgDist = $HDs | Measure-Object -Average | Select-Object -ExpandProperty Average
-            $obj = "" | Select-Object KeySize,CalcKeySize,AvgDist,GCD
+            $AvgHD = ($HDs | Measure-Object -Average | Select-Object -ExpandProperty Average)
+            $NAvgHD = $AvgHD / $CalcKeySize
+            $obj = "" | Select-Object KeySize,CalcKeySize,AvgHD,NAvgHD
             $obj.KeySize = $i
             $obj.CalcKeySize = $CalcKeySize
-            $obj.AvgDist = $AvgDist
-            $obj.GCD = 1
+            $obj.AvgHD = $AvgHD
+            $obj.NAvgHD = $NAvgHD
             $objs += $obj
-            $NoUserMaxSamples = $True
         }
     }
 
-    $a,$gcd = 1
-
-   
-    <# for ($b = 0; $b -lt $objs.Count; $b++) {
-        $objs[$b]
-        $temp = GetGreatestCommonDenominator $objs[0].CalcKeySize $objs[$b].CalcKeySize
-        Write-Verbose ("GCD of {0} and {1} is {2}." -f $objs[$b].CalcKeySize, $objs[($b+1)].CalcKeySize, $temp)
-        if ($objs[$b].GCD -lt $temp) {
-            $objs[$b].GCD = $temp
-        }        
-    }
-    #>
-
-    $objs | sort AvgDist | ForEach-Object {
-        $obj = "" | Select-Object KeySize,Rank,RankCalcKeySizeRatio,CalcKeySize,AvgDist,Total
+    $a = 1
+    $AvgHDSortObj = @()
+ 
+    # Sort objects on average Hamming Distance, set AvgHDRank and
+    # populate new object array, $AvgHDSortObj
+    $objs | sort AvgHD | ForEach-Object {
+        $obj = "" | Select-Object KeySize,AvgHDRank,CalcKeySize,AvgHD,NAvgHD
         $obj.KeySize = $_.KeySize
-        $obj.Rank = $a
-        $obj.RankCalcKeySizeRatio = $_.CalcKeySize / $a
+        $obj.AvgHDRank = $a
         $obj.CalcKeySize = $_.CalcKeySize
-        $obj.AvgDist = $_.AvgDist
-        # $obj.GCD = $_.GCD
-        $obj.Total = (($obj.CalcKeySize * $obj.Rank) + $obj.RankCalcKeySizeRatio) * $obj.AvgDist
-        $obj | Select-Object KeySize,CalcKeySize,Rank,RankCalcKeySizeRatio,AvgDist,Total
+        $obj.AvgHD = $_.AvgHD
+        $obj.NAvgHD = $_.NAvgHD
         $a++
-    } | Sort-Object Total # | Select-Object -First 5
+        $AvgHDSortObj += $obj
+    }
+
+    
+    $a = 1
+
+    # Now sort $AvgHDSortObj array of objects by Normalized Average Hamming Distance and
+    # assign a ranking
+    # $NAvgHDSortObj = @()
+    $AvgHDSortObj | sort NAvgHD | ForEach-Object {
+        $obj = "" | Select-Object KeySize,AvgHDRank,NAvgHDRank,CalcKeySize,AvgHD,NAvgHD
+        $obj.Keysize = $_.KeySize
+        $obj.AvgHDRank = $_.AvgHDRank
+        $obj.NAvgHDRank = $a
+        $obj.CalcKeySize = $_.CalcKeySize
+        $obj.AvgHD = $_.AvgHD
+        $obj.NAvgHD = $_.NAvgHD
+        $a++
+        $obj | Select-Object KeySize,CalcKeySize,AvgHDRank,NAvgHDRank,AvgHD,NAvgHD
+    } # | Sort-Object CalcKeySize
 }
