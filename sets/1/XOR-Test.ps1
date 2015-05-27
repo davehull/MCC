@@ -559,7 +559,7 @@ for ($i = 2; $i -le $MaxKeySize ; $i++) {
         $gcd13 = (GetGreatestCommonDenominator -val1 ($TopObjs[$p].CalcKeySize) -val2 ($TopObjs[$p + 2].CalcKeySize))
         $gcd23 = (GetGreatestCommonDenominator -val1 ($TopObjs[$p + 1].CalcKeySize) -val2 ($TopObjs[$p + 2].CalcKeySize))
 
-        if ($gcd12 -eq $gcd13 -eq $gcd23) {
+        if (($gcd12 -eq $gcd13 -eq $gcd23) -or ($gcd12 -eq $TopObjs[$p].CalcKeySize) -or ($gcd12 -eq $TopObjs[$p + 1].CalcKeySize)) {
             $obj.ActualKeySize = $TopObjs[$p].KeySize
             $obj.ProbableKeySizes = $gcd12
             $obj.PlainText = $plaintext
