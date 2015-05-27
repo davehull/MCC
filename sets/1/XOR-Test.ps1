@@ -21,9 +21,11 @@ Param(
 )
 
 
-# Here's our plaintext
-switch (Get-Random -Maximum 10 -Minimum 1) {
-    1 {
+
+function GetPlaintext {
+    # Here's our plaintext
+    switch (Get-Random -Maximum 10 -Minimum 1) {
+        1 {
 $plaintext = @"
 One morning, when Gregor Samsa woke from troubled dreams, he found
 himself transformed in his bed into a horrible vermin.  He lay on
@@ -71,7 +73,7 @@ to feel the place with one of his legs he drew it quickly back
 because as soon as he touched it he was overcome by a cold shudder.
 "@
 } 
-    2 {
+        2 {
 $plaintext = @"
 The art of constructing cryptographs or ciphers—intelligible to
 those who know the key and unintelligible to others—has been studied
@@ -129,7 +131,7 @@ hands it passed. But I may confine myself to messages in English, and
 for the present to simple cryptographs and ciphers.
 "@
 }
-    3 {
+        3 {
 $plaintext = @"
 Suzanne Church almost never had to bother with the blue blazer these
 days. Back at the height of the dot-boom, she'd put on her business
@@ -189,7 +191,7 @@ the vilest baby-killers. He was the kind of revolutionary who liked
 his firing squads arranged in a circle.
 "@
 }
-    4 {
+        4 {
 $plaintext = @"
 Kansa is an incident response framework written in PowerShell, useful for data collection and analysis. Most of the analysis capabilities in Kansa require Logparser, which is a very handy tool for creating SQL-like queries over data sets that may be comprised of a single file or many files.
 
@@ -213,7 +215,7 @@ As with nearly all of the scripts that make up Kansa, Get-LogparserStack.ps1 can
 If you use it and encounter any bugs, please open an issue in Kansa's GitHub page.
 "@
 }
-    5 {
+        5 {
 $plaintext = @"
 WELL, I got a good going-over in the morning from old Miss Watson on
 account of my clothes; but the widow she didn't scold, but only cleaned
@@ -268,7 +270,7 @@ a woman dressed up in a man's clothes.  So I was uncomfortable again.
 wouldn't.
 "@
 }
-    6 {
+        6 {
 $plaintext = @"
 It was the best of times,
 it was the worst of times,
@@ -289,7 +291,7 @@ its noisiest authorities insisted on its being received, for good or for
 evil, in the superlative degree of comparison only.
 "@
 }
-    7 {
+        7 {
 $plaintext = @"
 Morning-room in Algernon's flat in Half-Moon Street.  The room is
 luxuriously and artistically furnished.  The sound of a piano is heard in
@@ -303,7 +305,7 @@ Algernon.  Did you hear what I was playing, Lane?
 Lane.  I didn't think it polite to listen, sir.
 "@
 }
-    8 {
+        8 {
 $plaintext = @"
 Alice was beginning to get very tired of sitting by her sister on the
 bank, and of having nothing to do: once or twice she had peeped into the
@@ -312,12 +314,12 @@ it, 'and what is the use of a book,' thought Alice 'without pictures or
 conversations?'
 "@
 }
-    9 {
+        9 {
 $plaintext = @"
 The international security research community has greatly contributed to our understanding of computer security over the last 20+ years. Highly international speaker line-ups are the norm, and cooperation between people from different nations and continents is the norm rather than the exception. 
 "@
 }
-    10 {
+        10 {
 $plaintext = @"
 In computer science, the Aho–Corasick string matching algorithm is a string searching algorithm invented by Alfred V. Aho and Margaret J. Corasick.[1] It is a kind of dictionary-matching algorithm that locates elements of a finite set of strings (the "dictionary") within an input text. It matches all patterns simultaneously. The complexity of the algorithm is linear in the length of the patterns plus the length of the searched text plus the number of output matches. Note that because all matches are found, there can be a quadratic number of matches if every substring matches (e.g. dictionary = a, aa, aaa, aaaa and input string is aaaa).
 
@@ -327,8 +329,11 @@ When the pattern dictionary is known in advance (e.g. a computer virus database)
 
 The Aho–Corasick string matching algorithm formed the basis of the original Unix command fgrep.
 "@
+        }
+    }
+    $plaintext
 }
-}
+
 function GetBits {
 Param(
     [Parameter(Mandatory=$True,Position=0,ValueFromPipeLine=$True)]
@@ -409,21 +414,23 @@ Param (
     }        
 }
 
-# Here's a key byte array
-[byte[]]$keyArray = @()
-$BytePairDist = @{}
-
-# Convert our plaintext to a byte array
-$byteArray = GetBytes -String $plaintext
-
 if (-not($MaxSamples)) {
     $NoUserMaxSamples = $True
 } else {
     $NoUserMaxSamples = $False
 }
 
+$BytePairDist = @{}
+
 # In the outter loop here we encrypt our plaintext with a randomly generated key
 for ($i = 2; $i -le $MaxKeySize ; $i++) {
+
+    # Here's a key byte array
+    [byte[]]$keyArray = @()
+
+    # Convert our plaintext to a byte array
+    $plaintext = GetPlaintext
+    $byteArray = GetBytes -String $plaintext
     
     [byte[]]$CipherByteArray,[byte[]]$sample,[byte[]]$keyArray = @()
 
@@ -545,22 +552,23 @@ for ($i = 2; $i -le $MaxKeySize ; $i++) {
     #>
 
     $gcd = 0
+    $obj = "" | Select-Object ActualKeySize,ProbableKeySizes,GCD,PlainText,Key
+
     for ($p = 0; $p -lt $TopObjs.Count - 1; $p++) {
-        $ngcd = (GetGreatestCommonDenominator -val1 ($TopObjs[$p].CalcKeySize) -val2 ($TopObjs[$p + 1].CalcKeySize))
-        if ($gcd -lt $ngcd -and $ngcd -ne 1) {
-            $gcd = $ngcd
-        } elseif ($gcd -eq $ngcd) {
-            $obj = "" | Select-Object ActualKeySize,ProbableKeySizes,PlainText,Key
+        $gcd12 = (GetGreatestCommonDenominator -val1 ($TopObjs[$p].CalcKeySize) -val2 ($TopObjs[$p + 1].CalcKeySize))
+        $gcd13 = (GetGreatestCommonDenominator -val1 ($TopObjs[$p].CalcKeySize) -val2 ($TopObjs[$p + 2].CalcKeySize))
+        $gcd23 = (GetGreatestCommonDenominator -val1 ($TopObjs[$p + 1].CalcKeySize) -val2 ($TopObjs[$p + 2].CalcKeySize))
+
+        if ($gcd12 -eq $gcd13 -eq $gcd23) {
             $obj.ActualKeySize = $TopObjs[$p].KeySize
-            $obj.ProbableKeySizes = $gcd
-            $obj.PlainText = $null
-            $obj.Key = $null
+            $obj.ProbableKeySizes = $gcd12
+            $obj.PlainText = $plaintext
+            $obj.Key = $keyArray -join ":"
             $obj | Select-Object ActualKeySize,ProbableKeySizes,PlainText,Key
             break
         } else {
-            $obj = "" | Select-Object ActualKeySize,ProbableKeySizes,PlainText,Key
             $obj.ActualKeySize = $TopObjs[$p].KeySize
-            $obj.ProbableKeySizes = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join "|"
+            $obj.ProbableKeySizes = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join ":"
             $obj.PlainText = $plaintext
             $obj.Key = $keyArray -join ":"
             $obj | Select-Object ActualKeySize,ProbableKeySizes,PlainText,Key
