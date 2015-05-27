@@ -547,19 +547,23 @@ for ($i = 2; $i -le $MaxKeySize ; $i++) {
     $gcd = 0
     for ($p = 0; $p -lt $TopObjs.Count - 1; $p++) {
         $ngcd = (GetGreatestCommonDenominator -val1 ($TopObjs[$p].CalcKeySize) -val2 ($TopObjs[$p + 1].CalcKeySize))
-        if ($gcd -lt $ngcd) {
+        if ($gcd -lt $ngcd -and $ngcd -ne 1) {
             $gcd = $ngcd
         } elseif ($gcd -eq $ngcd) {
-            $obj = "" | Select-Object ActualKeySize,ProbableKeySizes
+            $obj = "" | Select-Object ActualKeySize,ProbableKeySizes,PlainText,Key
             $obj.ActualKeySize = $TopObjs[$p].KeySize
             $obj.ProbableKeySizes = $gcd
-            $obj | Select-Object ActualKeySize,ProbableKeySizes
+            $obj.PlainText = $null
+            $obj.Key = $null
+            $obj | Select-Object ActualKeySize,ProbableKeySizes,PlainText,Key
             break
         } else {
-            $obj = "" | Select-Object ActualKeySize,ProbableKeySizes
+            $obj = "" | Select-Object ActualKeySize,ProbableKeySizes,PlainText,Key
             $obj.ActualKeySize = $TopObjs[$p].KeySize
             $obj.ProbableKeySizes = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join "|"
-            $obj | Select-Object ActualKeySize,ProbableKeySizes 
+            $obj.PlainText = $plaintext
+            $obj.Key = $keyArray -join ":"
+            $obj | Select-Object ActualKeySize,ProbableKeySizes,PlainText,Key
             break
         }
         # Write-Verbose ("KeySize is {0}, GCD is {3}, CalcKeySize is {1}, next CalcKeySize is {2}" -f $TopObjs[$p].KeySize, $TopObjs[$p].CalcKeySize, $TopObjs[$p + 1].CalcKeySize, $gcd)
