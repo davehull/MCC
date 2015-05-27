@@ -15,12 +15,14 @@ Param(
     [Parameter(Mandatory=$True,Position=0)]
         [int]$MaxKeySize=10,
     [Parameter(Mandatory=$False,Position=1)]
-        [int]$MaxSamples
+        [int]$MaxSamples,
+    [Parameter(Mandatory=$False,Position=2)]
+        [int]$top=5
 )
 
 
 # Here's our plaintext
-switch (Get-Random -Maximum 3 -Minimum 1) {
+switch (Get-Random -Maximum 10 -Minimum 1) {
     1 {
 $plaintext = @"
 One morning, when Gregor Samsa woke from troubled dreams, he found
@@ -187,8 +189,146 @@ the vilest baby-killers. He was the kind of revolutionary who liked
 his firing squads arranged in a circle.
 "@
 }
-}
+    4 {
+$plaintext = @"
+Kansa is an incident response framework written in PowerShell, useful for data collection and analysis. Most of the analysis capabilities in Kansa require Logparser, which is a very handy tool for creating SQL-like queries over data sets that may be comprised of a single file or many files.
 
+Because adversaries usually want to leave a small footprint, one technique for finding them is frequency analysis -- looking for outliers across many systems. This technique has been written about before. As such, most of the analysis tools in Kansa are scripts that stack-rank or perform frequency analysis of specific fields in a given data set. Some examples include:
+Get-ASEPImagePathMD5Stack.ps1
+Get-ASEPImagePathLaunchStringMD5UnsignedStack.ps1
+Get-ASEPImagePathLaunchStringMD5UnsignedTimeStack.ps1
+
+And the list goes on. These script names are fairly descriptive, but they are a mouthful and they are not very flexible as they contain hardcoded Logparser queries with set field names.
+
+Kansa needed a more flexible stack-ranking solution and now it has one.
+
+Get-LogparserStack.ps1 can be used to perform frequency analysis against any delimited file or set of files, so long as the set all has the same schema and the same header row across each file. Unlike all other Kansa utilities, Get-LogparserStack.ps1 is interactive. After reading the first two lines of each input file and confirming that they all have the same header row, the script prompts the user for the field she wishes to pass to Logparser's COUNT() function, then the script prompts the user for the fields she wishes to GROUP BY.
+
+Below is a screen shot of the script in action against a small set of Autorunsc data from five systems. The frequency analysis is against the "Image Path" field with both "Image Path" and MD5 being added to the GROUP BY clause. As you can see in the screen shot, the resulting query quickly bubbles up an outlier, a dll from one system does not match the same dll from the other four systems.
+
+Get-LogparserStack.ps1 is a new utility and as such, may mature a bit in time. One potential feature would be to make it non-interactive, so it can be scripted.
+
+As with nearly all of the scripts that make up Kansa, Get-LogparserStack.ps1 can be used in conjunction with Logparser.exe outside the framework to perform frequency analysis of any data set, providing the schemas match and each file in the set has a header row.
+
+If you use it and encounter any bugs, please open an issue in Kansa's GitHub page.
+"@
+}
+    5 {
+$plaintext = @"
+WELL, I got a good going-over in the morning from old Miss Watson on
+account of my clothes; but the widow she didn't scold, but only cleaned
+off the grease and clay, and looked so sorry that I thought I would
+behave awhile if I could.  Then Miss Watson she took me in the closet
+and prayed, but nothing come of it.  She told me to pray every day, and
+whatever I asked for I would get it.  But it warn't so.  I tried it.
+Once I got a fish-line, but no hooks.  It warn't any good to me without
+hooks.  I tried for the hooks three or four times, but somehow I
+couldn't make it work.  By and by, one day, I asked Miss Watson to
+try for me, but she said I was a fool.  She never told me why, and I
+couldn't make it out no way.
+
+I set down one time back in the woods, and had a long think about it.
+ I says to myself, if a body can get anything they pray for, why don't
+Deacon Winn get back the money he lost on pork?  Why can't the widow get
+back her silver snuffbox that was stole?  Why can't Miss Watson fat up?
+No, says I to my self, there ain't nothing in it.  I went and told the
+widow about it, and she said the thing a body could get by praying for
+it was "spiritual gifts."  This was too many for me, but she told me
+what she meant--I must help other people, and do everything I could for
+other people, and look out for them all the time, and never think about
+myself. This was including Miss Watson, as I took it.  I went out in the
+woods and turned it over in my mind a long time, but I couldn't see no
+advantage about it--except for the other people; so at last I reckoned
+I wouldn't worry about it any more, but just let it go.  Sometimes the
+widow would take me one side and talk about Providence in a way to make
+a body's mouth water; but maybe next day Miss Watson would take hold
+and knock it all down again.  I judged I could see that there was two
+Providences, and a poor chap would stand considerable show with the
+widow's Providence, but if Miss Watson's got him there warn't no help
+for him any more.  I thought it all out, and reckoned I would belong
+to the widow's if he wanted me, though I couldn't make out how he was
+a-going to be any better off then than what he was before, seeing I was
+so ignorant, and so kind of low-down and ornery.
+
+Pap he hadn't been seen for more than a year, and that was comfortable
+for me; I didn't want to see him no more.  He used to always whale me
+when he was sober and could get his hands on me; though I used to take
+to the woods most of the time when he was around.  Well, about this time
+he was found in the river drownded, about twelve mile above town, so
+people said.  They judged it was him, anyway; said this drownded man was
+just his size, and was ragged, and had uncommon long hair, which was all
+like pap; but they couldn't make nothing out of the face, because it had
+been in the water so long it warn't much like a face at all.  They said
+he was floating on his back in the water.  They took him and buried him
+on the bank.  But I warn't comfortable long, because I happened to think
+of something.  I knowed mighty well that a drownded man don't float on
+his back, but on his face.  So I knowed, then, that this warn't pap, but
+a woman dressed up in a man's clothes.  So I was uncomfortable again.
+ I judged the old man would turn up again by and by, though I wished he
+wouldn't.
+"@
+}
+    6 {
+$plaintext = @"
+It was the best of times,
+it was the worst of times,
+it was the age of wisdom,
+it was the age of foolishness,
+it was the epoch of belief,
+it was the epoch of incredulity,
+it was the season of Light,
+it was the season of Darkness,
+it was the spring of hope,
+it was the winter of despair,
+we had everything before us,
+we had nothing before us,
+we were all going direct to Heaven,
+we were all going direct the other way--
+in short, the period was so far like the present period, that some of
+its noisiest authorities insisted on its being received, for good or for
+evil, in the superlative degree of comparison only.
+"@
+}
+    7 {
+$plaintext = @"
+Morning-room in Algernon's flat in Half-Moon Street.  The room is
+luxuriously and artistically furnished.  The sound of a piano is heard in
+the adjoining room.
+
+[Lane is arranging afternoon tea on the table, and after the music has
+ceased, Algernon enters.]
+
+Algernon.  Did you hear what I was playing, Lane?
+
+Lane.  I didn't think it polite to listen, sir.
+"@
+}
+    8 {
+$plaintext = @"
+Alice was beginning to get very tired of sitting by her sister on the
+bank, and of having nothing to do: once or twice she had peeped into the
+book her sister was reading, but it had no pictures or conversations in
+it, 'and what is the use of a book,' thought Alice 'without pictures or
+conversations?'
+"@
+}
+    9 {
+$plaintext = @"
+The international security research community has greatly contributed to our understanding of computer security over the last 20+ years. Highly international speaker line-ups are the norm, and cooperation between people from different nations and continents is the norm rather than the exception. 
+"@
+}
+    10 {
+$plaintext = @"
+In computer science, the Aho–Corasick string matching algorithm is a string searching algorithm invented by Alfred V. Aho and Margaret J. Corasick.[1] It is a kind of dictionary-matching algorithm that locates elements of a finite set of strings (the "dictionary") within an input text. It matches all patterns simultaneously. The complexity of the algorithm is linear in the length of the patterns plus the length of the searched text plus the number of output matches. Note that because all matches are found, there can be a quadratic number of matches if every substring matches (e.g. dictionary = a, aa, aaa, aaaa and input string is aaaa).
+
+Informally, the algorithm constructs a finite state machine that resembles a trie with additional links between the various internal nodes. These extra internal links allow fast transitions between failed pattern matches (e.g. a search for cat in a trie that does not contain cat, but contains cart, and thus would fail at the node prefixed by ca), to other branches of the trie that share a common prefix (e.g., in the previous case, a branch for attribute might be the best lateral transition). This allows the automaton to transition between pattern matches without the need for backtracking.
+
+When the pattern dictionary is known in advance (e.g. a computer virus database), the construction of the automaton can be performed once off-line and the compiled automaton stored for later use. In this case, its run time is linear in the length of the input plus the number of matched entries.
+
+The Aho–Corasick string matching algorithm formed the basis of the original Unix command fgrep.
+"@
+}
+}
 function GetBits {
 Param(
     [Parameter(Mandatory=$True,Position=0,ValueFromPipeLine=$True)]
@@ -288,8 +428,8 @@ for ($i = 2; $i -le $MaxKeySize ; $i++) {
     [byte[]]$CipherByteArray,[byte[]]$sample,[byte[]]$keyArray = @()
 
     for ($j = 1; $j -le $i; $j++) {
-        # $keyArray += Get-Random -Minimum 0x00 -Maximum 0xFF 
-        $keyArray += Get-Random -Minimum 0x20 -Maximum 0x7F # ASCII printables are in 0x20 - 0x7F
+        $keyArray += Get-Random -Minimum 0x00 -Maximum 0xFF 
+        # $keyArray += Get-Random -Minimum 0x20 -Maximum 0x7F # ASCII printables are in 0x20 - 0x7F
     }
     # Write-Verbose ("KeyArray is {0}" -f ($keyArray -join ":"))
 
@@ -369,6 +509,9 @@ for ($i = 2; $i -le $MaxKeySize ; $i++) {
         }
     }
 
+    $TopObjs = $objs | Sort-Object NAvgHD | Select-Object -First $top
+
+    <#
     $a = 1
     $AvgHDSortObj = @()
  
@@ -385,13 +528,10 @@ for ($i = 2; $i -le $MaxKeySize ; $i++) {
         $AvgHDSortObj += $obj
     }
 
-    
+    $objs = @()
     $a = 1
 
-    # Now sort $AvgHDSortObj array of objects by Normalized Average Hamming Distance and
-    # assign a ranking
-    # $NAvgHDSortObj = @()
-    $AvgHDSortObj | sort NAvgHD | ForEach-Object {
+    $TopObjs = ($AvgHDSortObj | sort NAvgHD | ForEach-Object {
         $obj = "" | Select-Object KeySize,AvgHDRank,NAvgHDRank,CalcKeySize,AvgHD,NAvgHD
         $obj.Keysize = $_.KeySize
         $obj.AvgHDRank = $_.AvgHDRank
@@ -400,6 +540,28 @@ for ($i = 2; $i -le $MaxKeySize ; $i++) {
         $obj.AvgHD = $_.AvgHD
         $obj.NAvgHD = $_.NAvgHD
         $a++
-        $obj | Select-Object KeySize,CalcKeySize,AvgHDRank,NAvgHDRank,AvgHD,NAvgHD
-    } # | Sort-Object CalcKeySize
+        $obj | Select-Object KeySize,CalcKeySize,NAvgHDRank,NAvgHD
+    } | ? { $_.NAvgHDRank -le 6 })
+    #>
+
+    $gcd = 0
+    for ($p = 0; $p -lt $TopObjs.Count - 1; $p++) {
+        $ngcd = (GetGreatestCommonDenominator -val1 ($TopObjs[$p].CalcKeySize) -val2 ($TopObjs[$p + 1].CalcKeySize))
+        if ($gcd -lt $ngcd) {
+            $gcd = $ngcd
+        } elseif ($gcd -eq $ngcd) {
+            $obj = "" | Select-Object ActualKeySize,ProbableKeySizes
+            $obj.ActualKeySize = $TopObjs[$p].KeySize
+            $obj.ProbableKeySizes = $gcd
+            $obj | Select-Object ActualKeySize,ProbableKeySizes
+            break
+        } else {
+            $obj = "" | Select-Object ActualKeySize,ProbableKeySizes
+            $obj.ActualKeySize = $TopObjs[$p].KeySize
+            $obj.ProbableKeySizes = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join "|"
+            $obj | Select-Object ActualKeySize,ProbableKeySizes 
+            break
+        }
+        # Write-Verbose ("KeySize is {0}, GCD is {3}, CalcKeySize is {1}, next CalcKeySize is {2}" -f $TopObjs[$p].KeySize, $TopObjs[$p].CalcKeySize, $TopObjs[$p + 1].CalcKeySize, $gcd)
+    }
 }
