@@ -1,12 +1,11 @@
 ﻿<#
-Run 50 iterations
+Run MaxKeySize iterations
 Generate a new key for each iteration, with the key getting longer on each iteration
 Keys should consist of random bytes from 0x00 - 0xFF
 XOR-Encrypt a piece of text with the key in each iteration
 Run XOR-Brutr against the resulting ciphertext in an attempt to determine the key length
-Output the actual key size, followed by the normal XOR-Brutr output as csv.
-
-
+Output the actual key size and probable key sizes based on normalized Hamming Distance
+and greatest common denominator calculation of first three probable key siszes
 #>
 
 
