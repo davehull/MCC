@@ -552,26 +552,28 @@ for ($i = 2; $i -le $MaxKeySize ; $i++) {
     #>
 
     $gcd = 0
-    $obj = "" | Select-Object ActualKeySize,ProbableKeySizes,GCD,PlainText,Key
+    $obj = "" | Select-Object ActualKeySize,ProbableKeySize,Top${top}KeySizes,GCD,PlainText,Key
 
     for ($p = 0; $p -lt $TopObjs.Count - 1; $p++) {
         $gcd12 = (GetGreatestCommonDenominator -val1 ($TopObjs[$p].CalcKeySize) -val2 ($TopObjs[$p + 1].CalcKeySize))
         $gcd13 = (GetGreatestCommonDenominator -val1 ($TopObjs[$p].CalcKeySize) -val2 ($TopObjs[$p + 2].CalcKeySize))
         $gcd23 = (GetGreatestCommonDenominator -val1 ($TopObjs[$p + 1].CalcKeySize) -val2 ($TopObjs[$p + 2].CalcKeySize))
 
-        if (($gcd12 -eq $gcd13 -eq $gcd23) -or ($gcd12 -eq $TopObjs[$p].CalcKeySize) -or ($gcd12 -eq $TopObjs[$p + 1].CalcKeySize)) {
+        if (($gcd12 -ne 1 -or $gcd12 -ne 2) -and (($gcd12 -eq $gcd13 -eq $gcd23) -or ($gcd12 -eq $TopObjs[$p].CalcKeySize) -or ($gcd12 -eq $TopObjs[$p + 1].CalcKeySize))) {
             $obj.ActualKeySize = $TopObjs[$p].KeySize
-            $obj.ProbableKeySizes = $gcd12
+            $obj.ProbableKeySize = $gcd12
+            $obj."Top${top}KeySizes" = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join ":"
             $obj.PlainText = $plaintext
             $obj.Key = $keyArray -join ":"
-            $obj | Select-Object ActualKeySize,ProbableKeySizes,PlainText,Key
+            $obj | Select-Object ActualKeySize,ProbableKeySize,Top${top}KeySizes,PlainText,Key
             break
         } else {
             $obj.ActualKeySize = $TopObjs[$p].KeySize
-            $obj.ProbableKeySizes = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join ":"
+            $obj.ProbableKeySize = "Indeterminate"
+            $obj."Top${top}KeySizes" = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join ":"
             $obj.PlainText = $plaintext
             $obj.Key = $keyArray -join ":"
-            $obj | Select-Object ActualKeySize,ProbableKeySizes,PlainText,Key
+            $obj | Select-Object ActualKeySize,ProbableKeySize,Top${top}KeySizes,PlainText,Key
             break
         }
         # Write-Verbose ("KeySize is {0}, GCD is {3}, CalcKeySize is {1}, next CalcKeySize is {2}" -f $TopObjs[$p].KeySize, $TopObjs[$p].CalcKeySize, $TopObjs[$p + 1].CalcKeySize, $gcd)
