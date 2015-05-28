@@ -559,7 +559,7 @@ for ($i = 2; $i -le $MaxKeySize ; $i++) {
         $gcd13 = (GetGreatestCommonDenominator -val1 ($TopObjs[$p].CalcKeySize) -val2 ($TopObjs[$p + 2].CalcKeySize))
         $gcd23 = (GetGreatestCommonDenominator -val1 ($TopObjs[$p + 1].CalcKeySize) -val2 ($TopObjs[$p + 2].CalcKeySize))
 
-        if (($gcd12 -ne 1 -or $gcd12 -ne 2) -and (($gcd12 -eq $gcd13 -eq $gcd23) -or ($gcd12 -eq $TopObjs[$p].CalcKeySize) -or ($gcd12 -eq $TopObjs[$p + 1].CalcKeySize))) {
+        if (($gcd12 -ne 1) -and (($TopObjs[0..($TopObjs.Count - 1)].CalcKeySize).Contains($gcd12)) -and (($gcd12 -eq $gcd13 -eq $gcd23) -or ($gcd12 -eq $TopObjs[$p].CalcKeySize) -or ($gcd12 -eq $TopObjs[$p + 1].CalcKeySize))) {
             $obj.ActualKeySize = $TopObjs[$p].KeySize
             $obj.ProbableKeySize = $gcd12
             $obj."Top${top}KeySizes" = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join ":"
@@ -569,7 +569,7 @@ for ($i = 2; $i -le $MaxKeySize ; $i++) {
             break
         } else {
             $obj.ActualKeySize = $TopObjs[$p].KeySize
-            $obj.ProbableKeySize = ("{0} no multiples" -f ($TopObjs[$p].CalcKeySize))
+            $obj.ProbableKeySize = ("{0} uncertain" -f ($TopObjs[$p].CalcKeySize))
             $obj."Top${top}KeySizes" = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join ":"
             $obj.PlainText = $plaintext
             $obj.Key = $keyArray -join ":"
