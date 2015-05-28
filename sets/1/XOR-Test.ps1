@@ -569,7 +569,7 @@ for ($i = 2; $i -le $MaxKeySize ; $i++) {
             break
         } else {
             $obj.ActualKeySize = $TopObjs[$p].KeySize
-            $obj.ProbableKeySize = $($TopObjs[$p].CalcKeySize) + " no multiples"
+            $obj.ProbableKeySize = ("{0} no multiples" -f ($TopObjs[$p].CalcKeySize))
             $obj."Top${top}KeySizes" = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join ":"
             $obj.PlainText = $plaintext
             $obj.Key = $keyArray -join ":"
