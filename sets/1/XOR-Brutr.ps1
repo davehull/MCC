@@ -242,7 +242,7 @@ if (-not($MaxSamples)) {
 }
 
 $CipherByteCount = $CipherByteArray.Count
-$MaxAllowableSamples = [int]($CipherByteCount / 2) - 1
+$MaxAllowableSamples = [int]($CipherByteCount / 2)
 $MaxAllowableKeySize = [int]($CipherByteCount)
 
 if ($MaxSamples -gt $MaxAllowableSamples) {
@@ -264,12 +264,12 @@ for ($CalcKeySize = 2; $CalcKeySize -le $MaxKeySize; $CalcKeySize++) {
     # Write-Verbose ("Keysize is {0}." -f $CalcKeySize)
 
     if ($NoUserMaxSamples) {
-        $MaxSamples = (($CipherByteArray.Count / $CalcKeySize) - 1)
+        $MaxSamples = ([int]($CipherByteArray.Count / $CalcKeySize))
     }
 
     for ($i = 0; $i -lt $MaxSamples; $i++) {
-        $Start = ($CalcKeySize - 1) * $i
-        $End   = ($CalcKeySize - 1) * ($i + 1)
+        $Start = (($CalcKeySize - 1) * $i) + $i
+        $End   = (($CalcKeySize - 1) * ($i + 1) + $i)
         # Write-Verbose ("Start is {0}. End is {1}. CipherByteCount is {2}." -f $Start, $End, $CipherByteCount)
         if ($End -gt $CipherByteCount) {
             # Write-Verbose ("Index too high, can't read {0} bytes from CipherByteArray. Continuing." -f $End)
@@ -277,7 +277,7 @@ for ($CalcKeySize = 2; $CalcKeySize -le $MaxKeySize; $CalcKeySize++) {
         }
         $ByteArray1 = $CipherByteArray[$Start..$End]
         $Start = $End + 1
-        $End   = ($CalcKeySize - 1) * ($i + 2) + 1
+        $End   = (($CalcKeySize - 1) * ($i + 2) + 1) + $i
         # Write-Verbose ("Start is {0}. End is {1}. CipherByteCount is {2}." -f $Start, $End, $CipherByteCount)
         if ($End -gt $CipherByteCount) {
             Write-Verbose ("Index too high, can't read {0} bytes from CipherByteArray. Continuing." -f $End)
@@ -286,7 +286,7 @@ for ($CalcKeySize = 2; $CalcKeySize -le $MaxKeySize; $CalcKeySize++) {
         $ByteArray2 = $CipherByteArray[$Start..$End]
         if ($ByteArray1.Count -eq $ByteArray2.Count) {
             $HDs += (GetHammingDistance $ByteArray1 $ByteArray2 $BytePairDist)
-            # Write-Verbose ("HDs : {0}, Normalized : {1}, ByteArray1 : {2}, ByteArray2 : {3}" -f $HDs[$i], ($HDs[$i] / $ByteArray1.Count), ($ByteArray1 -join ","), ($ByteArray2 -join ",")) 
+            Write-Verbose ("HDs : {0}, Normalized : {1}, ByteArray1 : {2}, ByteArray2 : {3}" -f $HDs[$i], ($HDs[$i] / $ByteArray1.Count), ($ByteArray1 -join ","), ($ByteArray2 -join ",")) 
             # Write-Verbose ("ByteArrays are: {0} and {1}" -f ($ByteArray1 -join ":"), ($ByteArray2 -join ":"))
             # if (($HDs.Count % 450) -eq 0) { Write-Verbose ("HDs is {0}. ByteArray.Count is {1}" -f ($HDs -join ","), $ByteArray1.Count) }
             # if (($ByteArray1.Count % 29) -eq 0) { Write-Verbose ("HDs : {0}, Normalized : {1}, ByteArray1 : {2}, ByteArray2 : {3}" -f $HDs[$i], ($HDs[$i] / $ByteArray1.Count), ($ByteArray1 -join ","), ($ByteArray2 -join ",")) }
