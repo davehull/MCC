@@ -59,9 +59,9 @@ switch ($Format) {
         [System.Convert]::ToBase64String($xordBytes)
     }
     "byte" {
-        $xordBytes | ForEach-Object {
+        ($xordBytes | ForEach-Object {
             $Byte = [String]::Format("{0:d}",$_)
-            $Byte.PadLeft(2,"0")
-        }
+            $Byte.PadLeft(3,"0")
+        }) -join ","
     }
 }
