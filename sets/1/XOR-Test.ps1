@@ -26,307 +26,461 @@ function GetPlaintext {
     switch (Get-Random -Maximum 10 -Minimum 1) {
         1 {
 $plaintext = @"
-One morning, when Gregor Samsa woke from troubled dreams, he found
-himself transformed in his bed into a horrible vermin.  He lay on
-his armour-like back, and if he lifted his head a little he could
-see his brown belly, slightly domed and divided by arches into stiff
-sections.  The bedding was hardly able to cover it and seemed ready
-to slide off any moment.  His many legs, pitifully thin compared
-with the size of the rest of him, waved about helplessly as he
-looked.
+Abstract 
 
-"What's happened to me?" he thought.  It wasn't a dream.  His room,
-a proper human room although a little too small, lay peacefully
-between its four familiar walls.  A collection of textile samples
-lay spread out on the table - Samsa was a travelling salesman - and
-above it there hung a picture that he had recently cut out of an
-illustrated magazine and housed in a nice, gilded frame.  It showed
-a lady fitted out with a fur hat and fur boa who sat upright,
-raising a heavy fur muff that covered the whole of her lower arm
-towards the viewer.
+We develop a framework for analyzing the strengths and weaknesses 
+of firms engaged in providing services, synthesizing and building on the 
+literature addressing service operations. First, we summarize the 
+distinguishing characteristics of service products, as compared to 
+manufactured goods. We then partition the context in which firms operate 
+into three segments. The external environment encompasses product 
+definition and differentiation, as well as competitive forces. The internal 
+environment concerns issues similar to those in traditional management of 
+manufacturing operations. The customer interface is the most critical 
+segment, representing the service firm's "moment of truth." We discuss 
+each environment in turn. 
 
-Gregor then turned to look out the window at the dull weather.
-Drops of rain could be heard hitting the pane, which made him feel
-quite sad.  "How about if I sleep a little bit longer and forget all
-this nonsense", he thought, but that was something he was unable to
-do because he was used to sleeping on his right, and in his present
-state couldn't get into that position.  However hard he threw
-himself onto his right, he always rolled back to where he was.  He
-must have tried it a hundred times, shut his eyes so that he
-wouldn't have to look at the floundering legs, and only stopped when
-he began to feel a mild, dull pain there that he had never felt
-before.
 
-"Oh, God", he thought, "what a strenuous career it is that I've
-chosen! Travelling day in and day out.  Doing business like this
-takes much more effort than doing your own business at home, and on
-top of that there's the curse of travelling, worries about making
-train connections, bad and irregular food, contact with different
-people all the time so that you can never get to know anyone or
-become friendly with them.  It can all go to Hell!"  He felt a
-slight itch up on his belly; pushed himself slowly up on his back
-towards the headboard so that he could lift his head better; found
-where the itch was, and saw that it was covered with lots of little
-white spots which he didn't know what to make of; and when he tried
-to feel the place with one of his legs he drew it quickly back
-because as soon as he touched it he was overcome by a cold shudder.
+
+L Introduction 
+
+The service sector has become an important part of the world 
+economy over the past several decades, as manufacturings share of total 
+employment and output has fallen dramatically. ^ Furthermore, service 
+has become an important feature of manufactured products; repair and 
+maintenance, sales, and training are examples of services that enhance 
+and differentiate manufactured products. Today, there are very few firms 
+that do not view providing service as part of their strategy. In this paper, 
+we develop a framework for analyzing the strengths and weaknesses of 
+service operations. There is a growing body of literature focusing on 
+management of operations in service firms, and we use this work as 
+fundamental building blocks in creating a unified framework. We begin by 
+partitioning the context in which a firm operates into three segments: the 
+external environment, the internal environment, and the customer 
+interface. We then summarize the characteristics that distinguish service 
+products from manufactured products. These characteristics will be our 
+focus for the three remaining sections of the paper, in which we discuss 
+each segment in depth. 
+
+EL The Framework 
+
+It is useful to classify the questions that we address according to the 
+environments to which they pertain. Figure 1 illustrates this basic 
+framework. 2 Although it can not capture all of the complexity of the firm's 
+environment, the framework presents a way of thinking about the 
+relationships between the major functions and participants in service 
+operations.
 "@
 } 
         2 {
 $plaintext = @"
-The art of constructing cryptographs or ciphers—intelligible to
-those who know the key and unintelligible to others—has been studied
-for centuries. Their usefulness on certain occasions, especially in time
-of war, is obvious, while it may be a matter of great importance to
-those from whom the key is concealed to discover it. But the romance
-connected with the subject, the not uncommon desire to discover a
-secret, and the implied challenge to the ingenuity of all from whom the
-key is hidden, have attracted to the subject the attention of many to
-whom its utility is a matter of indifference.
-The leading authorities on the subject, few of which are less than
-a century old, are enumerated in an article by J.E. Bailey in the ninth
-edition of the Encyclopaedia Britannica, and references to various historic
-ciphers are there given. My knowledge of the subject, however, is
-limited to ciphers which I have met with in the course of casual reading,
-and I prefer to discuss the subject as it has presented itself to me,
-with no attempt to make it historically complete and no reference to
-other authorities. In fact the theory of the subject is not sufficiently
-important to make it worth while to try to deal with it historically
-or exhaustively.
-Most writers use the words cryptograph and cipher as synonymous.
-I employ them, however, with different meanings, which I proceed to
-define.
-A cryptograph may be defined as a manner of writing in which the
-letters or symbols employed are used in their normal sense, but are so
-arranged that the communication is intelligible only to those possessing
-the key. The word is sometimes used to denote the communication
-made. A simple example is a communication in which every word is
-spelt backwards. Thus:
-ymene deveileb ot eb gniriter troper noitisop no ssorc daor.
-A cipher may be defined as a manner of writing by characters arbitrarily
-invented or by an arbitrary use of letters, words, or characters
-in other than their ordinary sense, intelligible only to those possessing
-the key. The word is sometimes used to denote the communication
-made. A simple example is when each letter is replaced by the one
-that immediately follows it in the natural order of the alphabet, a being
-replaced by b, b by c, and so on, and finally z by a. In this cipher
-the above message would read:
-fofnz cfmjfwfe up cf sfujsjoh sfqpsu qptjujpo po dsptt spbe.
-In both cryptographs and ciphers the essential feature is that the
-communication may be freely given to all the world though it is unintelligible
-save to those who possess the key. The key must not be
-accessible to anyone, and if possible it should be known only to those
-using the cryptograph or cipher. The art of constructing a cryptograph
-lies in the concealment of the proper order of the essential letters or
-words: the art of constructing a cipher lies in concealing what letters
-or words are represented by the symbols used. In an actual communication
-cipher symbols may be arranged cryptographically, and thus
-further hinder a reading of the message. Thus the message given above
-would read in a cryptographic cipher as
-znfof efwfjmfc pu fc hojsjufs uspqfs opjujtpq op ttpsd ebps.
-If the message were sent in Latin or some foreign language it would
-further diminish the chance of it being read by a stranger through whose
-hands it passed. But I may confine myself to messages in English, and
-for the present to simple cryptographs and ciphers.
+This Investigation Report summarizes the results of studies undertaken to characterize the 
+extent of soil and groundwater contamination at the Former A Range on the Massachusetts 
+Military Reservation (MMR). The Former A Range Investigation was conducted under 
+U.S. Environmental Protection Agency Safe Drinking Water Act Administrative Orders SDWA 
+1-97-1019 and SDWA 1-2000-0014, and in consideration of the substantive cleanup standards 
+of the Massachusetts Contingency Plan (MCP). 
+
+The Former A Range (also known as the Gravity Anti-Tank Range) is an inactive anti-tank 
+artillery and rocket practice range. It is located to the west of the Camp Edwards Impact Area in 
+the southern portion of Training Area B-9. Wood Road and Training Area B-8 lie to the 
+immediate south. The range was originally constructed in 1941 and functioned as an anti-tank 
+artillery and rocket site until the 1960s. A prominent feature of the range was the gravity 
+propelled movement of cars along a short downhill rail line to provide moving targets. During the 
+early 1960s to the mid-1970s, the range was used for machine gun practice. 
+
+Groundwater monitoring data for four wells on the range indicate the presence of trace levels of 
+a few explosives-related compounds. 2,4,6-trinitrotoluene (TNT) and two of its degradation 
+products 2-amino-4,6-dinitrotoluene (2A-DNT) and 4-amino-2,6-dinitrotoluene (4A-DNT) were 
+observed at low concentrations (<1.0 microgram per liter [|ig/L]) in one well (MW-249M3) 
+downgradient of the target area, although not in well MW-206S immediately beneath the target 
+area. The explosives compounds hexahydro-1,3,5-trinitro-1,3,5-triazine (RDX) and 1,3,5- 
+trinitrobenzene were also detected once in MW-249M3 at concentrations of 0.31 J |ig/L and 
+0.33J |ig/L, respectively. 
+
+Overall investigation results indicate that the principal contaminants detected in soils at the 
+range are explosives, semivolatile organic compounds (SVOCs), and metals. These 
+contaminants are primarily observed in the target area of the range. Detections of these 
+contaminants were sporadic. Explosives, SVOCs, and/or metals contaminants in soils are co- 
+located at some but not all sampling locations. 
+
+Explosives compounds were detected in a limited number of surface and shallow subsurface 
+soil samples located throughout the target area. The principal explosives that were observed 
+include TNT and its degradation products, 2A-DNT and 4A-DNT. The highest reported TNT 
+concentration (9 milligrams per kilogram [mg/Kg]) was observed in the backstop berm portions 
+of the target area. The highest levels of 2A-DNT (6.8 mg/Kg) and 4A-DNT (2.4 mg/Kg) were 
+reported in the lower berm portions of the target area. Explosives compounds were detected 
+infrequently and at low concentrations in soil samples located outside the target area berms. 
+Semivolatile polycyclic aromatic hydrocarbon (PAH) compounds were also detected 
+sporadically at several locations within the target area. However, most of the higher observed 
+PAH concentrations were clustered in surface and shallow subsurface soils along portions of 
+the rail line. Maximum observed values of most of the more frequently detected PAHs, including 
+fluoranthene (47 mg/Kg), phenanthrene (45 mg/Kg), and pyrene (40 mg/Kg), were all detected 
+at various surface soil locations along the rail line. 
 "@
 }
         3 {
 $plaintext = @"
-Suzanne Church almost never had to bother with the blue blazer these
-days. Back at the height of the dot-boom, she'd put on her business
-journalist drag -- blazer, blue sailcloth shirt, khaki trousers,
-loafers -- just about every day, putting in her obligatory appearances
-at splashy press-conferences for high-flying IPOs and mergers. These
-days, it was mostly work at home or one day a week at the San Jose
-Mercury News's office, in comfortable light sweaters with loose necks
-and loose cotton pants that she could wear straight to yoga after
-shutting her computer's lid.
+Two minor matters require a brief reference. The 
+illustrations of historical subjects are not inserted as 
+" pictures,' but with the prosaic and utilitarian object of 
+conveying some idea of the marine architecture of the 
+period, the conditions of naval warfare at that period, 
+and occasionally the meteorological conditions during 
 
-Blue blazer today, and she wasn't the only one. There was Reedy from
-the NYT's Silicon Valley office, and Tribbey from the WSJ, and that
-despicable rat-toothed jumped-up gossip columnist from one of the UK
-tech-rags, and many others besides. Old home week, blue blazers fresh
-from the dry-cleaning bags that had guarded them since the last time
-the NASDAQ broke 5,000.
 
-The man of the hour was Landon Kettlewell -- the kind of outlandish
-prep-school name that always seemed a little made up to her -- the new
-CEO and front for the majority owners of Kodak/Duracell. The
-despicable Brit had already started calling them Kodacell. Buying the
-company was pure Kettlewell: shrewd, weird, and ethical in a twisted
-way.
 
-"Why the hell have you done this, Landon?" Kettlewell asked himself
-into his tie-mic. Ties and suits for the new Kodacell execs in the
-room, like surfers playing dress-up. "Why buy two dinosaurs and stick
-'em together? Will they mate and give birth to a new generation of
-less-endangered dinosaurs?"
+PREFACE II 
 
-He shook his head and walked to a different part of the stage,
-thumbing a PowerPoint remote that advanced his slide on the jumbotron
-to a picture of a couple of unhappy cartoon brontos staring desolately
-at an empty nest. "Probably not. But there is a good case for what
-we've just done, and with your indulgence, I'm going to lay it out for
-you now."
+the battle also. It will be noted that where modern 
+ships are illustrated they are, where possible, rejjro- 
+duced from photographs. When otherwise, they are 
+in each case drawn either from my own sketches of 
+the actual ships or from photographs that did not 
+lend themselves to direct reproduction. 
 
-"Let's hope he sticks to the cartoons," Rat-Toothed hissed beside
-her. His breath smelled like he'd been gargling turds. He had a
-not-so-secret crush on her and liked to demonstrate his alpha-maleness
-by making half-witticisms into her ear. "They're about his speed."
+As everyone has his own rendering of Russian 
+spelling, and as of many ships several widely different 
+spellings are in existence, the more popular forms of 
+spelling are here and there adopted. As a general rule, 
+however, the correct more or less phonetic spelling 
+suitable for the English language is also introduced. 
 
-She twisted in her seat and pointedly hunched over her computer's
-screen, to which she'd taped a thin sheet of polarized plastic that
-made it opaque to anyone shoulder-surfing her. Being a halfway
-attractive woman in Silicon Valley was more of a pain in the ass than
-she'd expected, back when she'd been covering rustbelt shenanigans in
-Detroit, back when there was an auto industry in Detroit.
+The name Ksenia — Xenia, or Zenia — is a case in 
+point, the first being a Russian spelling, the last an 
+English adaption. When possible the phonetic sound 
+is indicated by the use of accents over the vowels 
+in order to avoid an ugly appearance. Rossia and 
+Sevastopol are names in point. 
 
-The worst part was that the Brit's reportage was just spleen-filled
-editorializing on the lack of ethics in the valley's board-rooms (a
-favorite subject of hers, which no doubt accounted for his
-fellow-feeling), and it was also the crux of Kettlewell's schtick. The
-spectacle of an exec who talked ethics enraged Rat-Toothed more than
-the vilest baby-killers. He was the kind of revolutionary who liked
-his firing squads arranged in a circle.
+The matter is not one of supreme importance, and 
+is only drawn attention to because in a number of 
+cases the usual English pronunciation bears no relation 
+at all to the Russian one. When such a simple name 
+as Rossia is s]3elt in English (as it occasionally is) 
+" Rossija," and recklessly pronounced " Rossyjar," one 
+may well acquit the Russian officer who told an 
+Englishman that they had no such ship in their 
+Navy. 
+
+The substance of the chapter on Anglo-Russian 
+relations, though some definite alterations have since 
+been made, appeared serially in the Daily Chronicle,
 "@
 }
         4 {
 $plaintext = @"
-Kansa is an incident response framework written in PowerShell, useful for data collection and analysis. Most of the analysis capabilities in Kansa require Logparser, which is a very handy tool for creating SQL-like queries over data sets that may be comprised of a single file or many files.
+Jemima Puddle-duck 
+lives in a farmyard 
+with the rest of the 
+Puddle-duck family. 
 
-Because adversaries usually want to leave a small footprint, one technique for finding them is frequency analysis -- looking for outliers across many systems. This technique has been written about before. As such, most of the analysis tools in Kansa are scripts that stack-rank or perform frequency analysis of specific fields in a given data set. Some examples include:
-Get-ASEPImagePathMD5Stack.ps1
-Get-ASEPImagePathLaunchStringMD5UnsignedStack.ps1
-Get-ASEPImagePathLaunchStringMD5UnsignedTimeStack.ps1
 
-And the list goes on. These script names are fairly descriptive, but they are a mouthful and they are not very flexible as they contain hardcoded Logparser queries with set field names.
 
-Kansa needed a more flexible stack-ranking solution and now it has one.
+The Puddle-ducks 
+march, pit pat 
+paddle pat! down 
+the road. 
 
-Get-LogparserStack.ps1 can be used to perform frequency analysis against any delimited file or set of files, so long as the set all has the same schema and the same header row across each file. Unlike all other Kansa utilities, Get-LogparserStack.ps1 is interactive. After reading the first two lines of each input file and confirming that they all have the same header row, the script prompts the user for the field she wishes to pass to Logparser's COUNT() function, then the script prompts the user for the fields she wishes to GROUP BY.
 
-Below is a screen shot of the script in action against a small set of Autorunsc data from five systems. The frequency analysis is against the "Image Path" field with both "Image Path" and MD5 being added to the GROUP BY clause. As you can see in the screen shot, the resulting query quickly bubbles up an outlier, a dll from one system does not match the same dll from the other four systems.
 
-Get-LogparserStack.ps1 is a new utility and as such, may mature a bit in time. One potential feature would be to make it non-interactive, so it can be scripted.
+And they search for 
+food, spHsh, splash, 
+splosh! in the pond. 
 
-As with nearly all of the scripts that make up Kansa, Get-LogparserStack.ps1 can be used in conjunction with Logparser.exe outside the framework to perform frequency analysis of any data set, providing the schemas match and each file in the set has a header row.
 
-If you use it and encounter any bugs, please open an issue in Kansa's GitHub page.
+
+Jemima ^vears her 
+best blue bonnet and 
+a pink shawl. 
+
+
+
+And here she is, with 
+her own family of 
+four Uttle ducklings. 
+
+
+
+A very first board book to introduce babies to 
+The Tale of Jemima Puddle-Duck 
+
+Based on the original tales by 
+BEATRIX POTTER 
+
+TM 
+
+Other Beatrix Potter board books: 
+
+Peter Rabbit 
+
+Tom Kitten 
+
+Jeremy Fisher 
+
+
+
+FREDERICK WARNE 
+
+Penguin Books Ltd, 
+
+Harmondsworth, Middlesex, England 
+
+New York, Australia, Canada, New Zealand 
+
+First published 1996 
+
+13579 10 8642 
+
+Copyright © F. Wame & Co., 1996 
+
+New reproductions copyright © F. Warne & Co., 1987 
+
+Original copyright in text and illustrations 
+
+© F. Warne & Co., 1908 
+
+All rights reserved 
+
+Frederick Warne is the owner of all rights,
 "@
 }
         5 {
 $plaintext = @"
-WELL, I got a good going-over in the morning from old Miss Watson on
-account of my clothes; but the widow she didn't scold, but only cleaned
-off the grease and clay, and looked so sorry that I thought I would
-behave awhile if I could.  Then Miss Watson she took me in the closet
-and prayed, but nothing come of it.  She told me to pray every day, and
-whatever I asked for I would get it.  But it warn't so.  I tried it.
-Once I got a fish-line, but no hooks.  It warn't any good to me without
-hooks.  I tried for the hooks three or four times, but somehow I
-couldn't make it work.  By and by, one day, I asked Miss Watson to
-try for me, but she said I was a fool.  She never told me why, and I
-couldn't make it out no way.
+Once upon a time and a very good time it was there was 
+a moocow coming down along the road and this moocow 
+that was down along the road met a nicens little boy 
+named baby tuckoo. . , . 
 
-I set down one time back in the woods, and had a long think about it.
- I says to myself, if a body can get anything they pray for, why don't
-Deacon Winn get back the money he lost on pork?  Why can't the widow get
-back her silver snuffbox that was stole?  Why can't Miss Watson fat up?
-No, says I to my self, there ain't nothing in it.  I went and told the
-widow about it, and she said the thing a body could get by praying for
-it was "spiritual gifts."  This was too many for me, but she told me
-what she meant--I must help other people, and do everything I could for
-other people, and look out for them all the time, and never think about
-myself. This was including Miss Watson, as I took it.  I went out in the
-woods and turned it over in my mind a long time, but I couldn't see no
-advantage about it--except for the other people; so at last I reckoned
-I wouldn't worry about it any more, but just let it go.  Sometimes the
-widow would take me one side and talk about Providence in a way to make
-a body's mouth water; but maybe next day Miss Watson would take hold
-and knock it all down again.  I judged I could see that there was two
-Providences, and a poor chap would stand considerable show with the
-widow's Providence, but if Miss Watson's got him there warn't no help
-for him any more.  I thought it all out, and reckoned I would belong
-to the widow's if he wanted me, though I couldn't make out how he was
-a-going to be any better off then than what he was before, seeing I was
-so ignorant, and so kind of low-down and ornery.
+His father told him that story : his father looked at him 
+through a glass : he had a hairy face. 
 
-Pap he hadn't been seen for more than a year, and that was comfortable
-for me; I didn't want to see him no more.  He used to always whale me
-when he was sober and could get his hands on me; though I used to take
-to the woods most of the time when he was around.  Well, about this time
-he was found in the river drownded, about twelve mile above town, so
-people said.  They judged it was him, anyway; said this drownded man was
-just his size, and was ragged, and had uncommon long hair, which was all
-like pap; but they couldn't make nothing out of the face, because it had
-been in the water so long it warn't much like a face at all.  They said
-he was floating on his back in the water.  They took him and buried him
-on the bank.  But I warn't comfortable long, because I happened to think
-of something.  I knowed mighty well that a drownded man don't float on
-his back, but on his face.  So I knowed, then, that this warn't pap, but
-a woman dressed up in a man's clothes.  So I was uncomfortable again.
- I judged the old man would turn up again by and by, though I wished he
-wouldn't.
+He was baby tuckoo. The moocow came down the road 
+where Betty Byrne lived : she sold lemon platt. 
+
+0, the mid rose blossoms 
+On the little green place. 
+
+He sang that song. That was his song. 
+
+0, the green wothe hotheth. 
+
+When you wet the bed, first it is warm then it gets 
+cold. Ilis mother put on the oilsheet. That had the 
+queer smell. 
+
+His mother had a nicer smell than his father. She 
+
+[1] 
+
+
+
+played on the piano the sailor's hornpipe for him to 
+dance. He danced: 
+
+Tralala lala, 
+Tralala iralaladdy, 
+Tralala lala, 
+Tralala lala. 
+
+Uncle Charles and Dante clapped. They were older 
+than his father and mother but Uncle Charles was older 
+than Dante. 
+
+Dante had two brushes in her press. The brush with 
+the maroon velvet back was for Michael Davitt and the 
+brush with the green velvet back was for Parnell. Dante 
+gave him a cachou every time he brought her a piece of 
+tissue paper. 
+
+The Vances lived in number seven. They had a dif- 
+ferent father and mother. They were Eileen's father 
+and mother. When they were grown up he was going to 
+marry Eileen. He hid under the table. His mother said : 
+
+— 0, Stephen will apologise. 
+Dante said: 
+
+— 0, if not, the eagles will come and pull out his 
+eyes. — : 
+
+Pull out his eyes, 
+
+Apologise, 
+
+Apologise, 
+
+Pull out his eyes. 
+
+Apologise, 
+Pull out his eyes, 
+Pull out his eyes. 
+Apologise. 
+
+TP W w * 
+
+12] 
 "@
 }
         6 {
 $plaintext = @"
-It was the best of times,
-it was the worst of times,
-it was the age of wisdom,
-it was the age of foolishness,
-it was the epoch of belief,
-it was the epoch of incredulity,
-it was the season of Light,
-it was the season of Darkness,
-it was the spring of hope,
-it was the winter of despair,
-we had everything before us,
-we had nothing before us,
-we were all going direct to Heaven,
-we were all going direct the other way--
-in short, the period was so far like the present period, that some of
-its noisiest authorities insisted on its being received, for good or for
-evil, in the superlative degree of comparison only.
+Fourth Method^. Ask some one to select a number less 
+than 90. Request him to perform the following operations, 
+(i) To multiply it by 10, and to add any number he pleases, 
+a, which is less than 10. (ii) To divide the result of step (i) 
+by 3, and to mention the remainder, say, b. (iii) To multiply 
+the quotient obtained in step (ii) by 10, and to add any number 
+he pleases, c, which is less than 10. (iv) To divide the result 
+of step (iii) by 3, and to mention the remainder, say d, and 
+the third digit (from the right) of the quotient; suppose 
+this digit is e. Then, if the numbers a, b, c, d, e are known, 
+the original number can be at once determined. In fact, if 
+the number is 9% + y, where x %■ 9 and y rf- 8, and if r is the 
+
+• Bachet, problem v, p. 80. 
+
+t Educational Times, London, May 1, 1895, vol. XLvin, p. 234. This example 
+is said to have been made up by J. Clerk Maxwell in his boyhood: it is in- 
+teresting to note how widely it differs from the simple Bachet problems pre- 
+viously mentioned. 
+
+
+
+6 ARITHMETICAL RECREATIONS [CH I 
+
+remainder when a - b + 3 (c - d) is divided by 9, we have 
+x = e, y = 9 — r. 
+
+The demonstration is not difficult. Suppose the selected num- 
+ber is 9a; + y. Step (i) gives 90a: + lOy + a. Let y + a = 3n + b, 
+then the quotient obtained in step (ii) is 30x + 2y + n. Step 
+(in) gives 300a; + 30y + 10n, + c. Let n + c = 3m + d, then the 
+quotient obtained in step (iv) is 100a; + lOy + 3n + m, which I 
+will denote by Q. Now the third digit in Q must be x, because, 
+since y if- 8 and a $■ 9, we have n ^ 5 ; and since n^-5 and c ^ 9, 
+we have m ^ 4 ; therefore lOy + 3n + m $■ 99. Hence the third 
+or hundreds digit in Q is x. 
+
+Again, from the relations y + a = 3w + b and n + c = 3m + d, 
+we have 9m — y = a-b + 3(c — d): hence, if r is the remainder 
+when a — b + 3 (c — d) is divided by 9, we have y = 9 — r. [This 
+is always true, if we make r positive ; but if a — b + 3 (c — d) 
+is negative, it is simpler to take y as equal to its numerical 
+value ; or we may prevent the occurrence of this case by 
+assigning proper values to a and c.J Thus x and y are both 
+known, and therefore the number selected, namely 9x + y, is 
+known. 
+
+Fifth Method*. Ask any one to select a number less 
+than 60. Eequest him to perform the following operations, 
+(i) To divide it by 3 and mention the remainder ; suppose it 
+to be a. (ii) To divide it by 4, and mention the remainder; 
+suppose it to be b. (iii) To divide it by 5, and mention the 
+remainder; suppose it to be c. Then the number selected is 
+the remainder obtained by dividing 40a + 456 + 36c by 60. 
+
+This method can be generalized and then will apply to any 
+number chosen. Let a', 6', c', ... be a series of numbers prime 
+to one another, and let p be their product. Let n be any 
+number less than p, and let a, b, c, ... be the remainders 
+when n is divided by a, b', c', . . . respectively. Find a number 
+A which is a multiple of the product b'c'd' . . . and which 
+exceeds by unity a multiple of a'. Find a number B which is 
+a multiple of a'c'd' ... and which exceeds by unity a multiple 
+
+* Bachet, problem vi, p. 84 : Bachet added, on p. 87, a note on the previous 
+history of the problem.
 "@
 }
         7 {
 $plaintext = @"
-Morning-room in Algernon's flat in Half-Moon Street.  The room is
-luxuriously and artistically furnished.  The sound of a piano is heard in
-the adjoining room.
+F. MESSAGE BIT INDEPENDENT INSERTION PROTOCOLS 
 
-[Lane is arranging afternoon tea on the table, and after the music has
-ceased, Algernon enters.]
+The protocols in the previous section require the receiver to have both the original 
+wrapper file and the stegotext to extract the message. This is because the insertion point 
+bit(s) are selected based on the value of the message bit. Therefore the only way for the 
+receiver to identify the insertion points is to compare the wrapper with the stegotext. This 
+is entirely different from the key- or algorithm-based protocol event selection techniques 
+mentioned earlier. 
 
-Algernon.  Did you hear what I was playing, Lane?
-
-Lane.  I didn't think it polite to listen, sir.
+Frequently, it is inconvenient or impossible for the receiver to have the original 
+wrapper file. For example, in an image downgrading scenario, it is possible for a misfeasor 
+to embed classified data in an image which he expects to be downgraded. Once the wrapper 
+image is downgraded, the original wrapper file is no longer available to be used for 
+comparison in an extraction algorithm For this reason, when designing a steganographic 
 "@
 }
         8 {
 $plaintext = @"
-Alice was beginning to get very tired of sitting by her sister on the
-bank, and of having nothing to do: once or twice she had peeped into the
-book her sister was reading, but it had no pictures or conversations in
-it, 'and what is the use of a book,' thought Alice 'without pictures or
-conversations?'
+The MISPC addresses: 
+
+• public key certificate generation, renewal, and revocation; 
+
+• signature generation and verification; and, 
+
+• certificate and certification path validation. 
+
+The specification consists primarily of a profile of certificate and CRL extensions and a set of 
+transactions. The transactions include: certification requests, certificate renewal, certificate 
+revocation, and retrieval of certificates and CRLs from repositories. 
 "@
 }
         9 {
 $plaintext = @"
-The international security research community has greatly contributed to our understanding of computer security over the last 20+ years. Highly international speaker line-ups are the norm, and cooperation between people from different nations and continents is the norm rather than the exception. 
+TOWARD the end of the year 1811, a tremendous armament 
+and concentration of forces took place in Western Europe ; 
+and in 1812, these forces millions of men, counting those 
+who were concerned in the transport and victualling of the 
+armies were moved from west to east toward the borders of 
+Russia, where the Russian forces were drawn up just as they 
+had been the year before.
 "@
 }
         10 {
 $plaintext = @"
-In computer science, the Aho–Corasick string matching algorithm is a string searching algorithm invented by Alfred V. Aho and Margaret J. Corasick.[1] It is a kind of dictionary-matching algorithm that locates elements of a finite set of strings (the "dictionary") within an input text. It matches all patterns simultaneously. The complexity of the algorithm is linear in the length of the patterns plus the length of the searched text plus the number of output matches. Note that because all matches are found, there can be a quadratic number of matches if every substring matches (e.g. dictionary = a, aa, aaa, aaaa and input string is aaaa).
+function GetHammingDistance {
+Param(
+    [Parameter(Mandatory=$True,Position=0)]
+        [byte[]]$ByteArray1,
+    [Parameter(Mandatory=$True,Position=1)]
+        [byte[]]$ByteArray2,
+    [Parameter(Mandatory=$True,Position=2)]
+        [hashtable]$BytePairDist
+)
+    if ($ByteArray1.Count -ne $ByteArray2.Count) {
+        Write-Error ("Hamming Distance can't be calculated because byte arrays are different lengths, {0} and {1}." -f $ByteArray1.Count, $ByteArray2.Count)
+        return $False
+    } else {
+        $Total = 0
+        for ($i = 0; $i -lt $ByteArray1.Count; $i++) {
+            $bitCount = 0
+            # $pair and $rpair are equivalent (10:15 -eq 15:10)
+            $pair  = $(($ByteArray1[$i],$ByteArray2[$i]) -join ":")
+            $rpair = $(($ByteArray2[$i],$ByteArray1[$i]) -join ":")
+            if ($pair -eq $rpair) { 
+                # Write-Verbose ("pair is {0}, Hamming Distance is 0" -f $pair)
+                # Hamming Distance between identical bytes is 0
+                continue
+            } elseif ($BytePairDist.Contains($pair) -or $BytePairDist.Contains($rpair)) {
+                $bitCount += $BytePairDist[$pair]
+                # Write-Verbose ("pair is {0}, Hamming Distance is {1}" -f $pair, $bitCount)
+            } else {
+                $bits = (GetBits ($ByteArray1[$i] -bxor $ByteArray2[$i]))
 
-Informally, the algorithm constructs a finite state machine that resembles a trie with additional links between the various internal nodes. These extra internal links allow fast transitions between failed pattern matches (e.g. a search for cat in a trie that does not contain cat, but contains cart, and thus would fail at the node prefixed by ca), to other branches of the trie that share a common prefix (e.g., in the previous case, a branch for attribute might be the best lateral transition). This allows the automaton to transition between pattern matches without the need for backtracking.
-
-When the pattern dictionary is known in advance (e.g. a computer virus database), the construction of the automaton can be performed once off-line and the compiled automaton stored for later use. In this case, its run time is linear in the length of the input plus the number of matched entries.
-
-The Aho–Corasick string matching algorithm formed the basis of the original Unix command fgrep.
+                for ($j = 0; $j -lt $bits.Length; $j++) {
+                    if ($bits[$j] -eq '1') {
+                        $bitCount++
+                    }
+                }
+                # Write-Verbose ("pair is {0}, Hamming Distance is {1}" -f $pair, $bitCount)
+                $BytePairDist.Add($pair,$bitCount)
+                $BytePairDist.Add($rpair,$bitCount)
+            }
+            $Total += $bitCount
+        }
+        $Total
+    }
+}
 "@
         }
     }
@@ -480,8 +634,8 @@ for ($i = 2; $i -le $MaxKeySize ; $i++) {
 
         # Write-Verbose ("MaxSamples is {0}" -f $MaxSamples)
         for ($a = 0; $a -lt $MaxSamples; $a++) {
-            $Start = ($CalcKeySize - 1) * $a
-            $End   = ($CalcKeySize - 1) * ($a + 1)
+            $Start = (($CalcKeySize - 1) * $a) + $a
+            $End   = (($CalcKeySize - 1) * ($a + 1) + $a)
             # Write-Verbose ("Start is {0}. End is {1}. CipherByteCount is {2}." -f $Start, $End, $CipherByteCount)
             if ($End -gt $CipherByteCount) {
                 # Write-Verbose ("Index too high, can't read {0} bytes from CipherByteArray. Continuing." -f $End)
@@ -489,7 +643,7 @@ for ($i = 2; $i -le $MaxKeySize ; $i++) {
             }
             $ByteArray1 = $CipherByteArray[$Start..$End]
             $Start = $End + 1
-            $End   = ($CalcKeySize - 1) * ($a + 2) + 1
+            $End   = (($CalcKeySize - 1) * ($a + 2) + 1) + $a
             # Write-Verbose ("Start is {0}. End is {1}. CipherByteCount is {2}." -f $Start, $End, $CipherByteCount)
             if ($End -gt $CipherByteCount) {
                 # Write-Verbose ("Index too high, can't read {0} bytes from CipherByteArray. Continuing." -f $End)
