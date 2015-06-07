@@ -13,17 +13,21 @@ and greatest common denominator calculation of first three probable key siszes
 Param(
     [Parameter(Mandatory=$True,Position=0)]
         [int]$MaxKeySize=10,
-    [Parameter(Mandatory=$False,Position=1)]
-        [int]$MaxSamples,
+    [Parameter(Mandatory=$True,Position=1)]
+        [int]$MinKeySize=2,
     [Parameter(Mandatory=$False,Position=2)]
+        [float]$MaxNAvgHD=3.5,
+    [Parameter(Mandatory=$False,Position=3)]
+        [int]$MaxSamples,
+    [Parameter(Mandatory=$False,Position=4)]
         [int]$top=5
 )
 
 
 
-function GetPlaintext {
+function GetPlaintextOld {
     # Here's our plaintext
-    switch (Get-Random -Maximum 10 -Minimum 1) {
+    switch (Get-Random -Maximum 11 -Minimum 1) {
         1 {
 $plaintext = @"
 Abstract 
@@ -170,79 +174,8 @@ been made, appeared serially in the Daily Chronicle,
 }
         4 {
 $plaintext = @"
-Jemima Puddle-duck 
-lives in a farmyard 
-with the rest of the 
-Puddle-duck family. 
-
-
-
-The Puddle-ducks 
-march, pit pat 
-paddle pat! down 
-the road. 
-
-
-
-And they search for 
-food, spHsh, splash, 
-splosh! in the pond. 
-
-
-
-Jemima ^vears her 
-best blue bonnet and 
-a pink shawl. 
-
-
-
-And here she is, with 
-her own family of 
-four Uttle ducklings. 
-
-
-
-A very first board book to introduce babies to 
-The Tale of Jemima Puddle-Duck 
-
-Based on the original tales by 
-BEATRIX POTTER 
-
-TM 
-
-Other Beatrix Potter board books: 
-
-Peter Rabbit 
-
-Tom Kitten 
-
-Jeremy Fisher 
-
-
-
-FREDERICK WARNE 
-
-Penguin Books Ltd, 
-
-Harmondsworth, Middlesex, England 
-
-New York, Australia, Canada, New Zealand 
-
-First published 1996 
-
-13579 10 8642 
-
-Copyright © F. Wame & Co., 1996 
-
-New reproductions copyright © F. Warne & Co., 1987 
-
-Original copyright in text and illustrations 
-
-© F. Warne & Co., 1908 
-
-All rights reserved 
-
-Frederick Warne is the owner of all rights,
+The international security research community has greatly contributed to our understanding of computer security over the last 20+ years. Highly international speaker line-ups are the norm, and cooperation between people from different nations and continents is the norm
+rather than the exception.
 "@
 }
         5 {
@@ -412,17 +345,11 @@ comparison in an extraction algorithm For this reason, when designing a steganog
 }
         8 {
 $plaintext = @"
-The MISPC addresses: 
-
-• public key certificate generation, renewal, and revocation; 
-
-• signature generation and verification; and, 
-
-• certificate and certification path validation. 
-
-The specification consists primarily of a profile of certificate and CRL extensions and a set of 
-transactions. The transactions include: certification requests, certificate renewal, certificate 
-revocation, and retrieval of certificates and CRLs from repositories. 
+Alice was beginning to get very tired of sitting by her sister on the
+bank, and of having nothing to do: once or twice she had peeped into the
+book her sister was reading, but it had no pictures or conversations in
+it, 'and what is the use of a book,' thought Alice 'without pictures or
+conversations?'
 "@
 }
         9 {
@@ -483,8 +410,35 @@ Param(
 }
 "@
         }
+        11 {
+            $plaintext = @"
+In computer science, the Aho–Corasick string matching algorithm is a string searching algorithm invented by Alfred V. Aho and Margaret J. Corasick.[1] It is a kind of dictionary-matching algorithm that locates elements of a finite set of strings (the "dictionary") within an input text. It matches all patterns simultaneously. The complexity of the algorithm is linear in the length of the patterns plus the length of the searched text plus the number of output matches. Note that because all matches are found, there can be a quadratic number of matches if every substring matches (e.g. dictionary = a, aa, aaa, aaaa and input string is aaaa).
+"@
+        }
     }
     $plaintext
+}
+
+function GetPlainText {
+    Begin {
+        $files = @()
+        $files = ls ${pwd}\texts\*.txt
+    }
+
+    Process {
+        # Randomly pick a book
+        $BookNum = Get-Random -Minimum 0 -Maximum $files.Count
+
+        # Get its content
+        $Content = Get-Content $files[$BookNum] | ? { $_ }
+        
+        # Get a random number of lines in the range of 0..(($Content.Length)-80)
+        $Start = Get-Random -Minimum 0 -Maximum (($Content.Length)-80)
+        $End   = Get-Random -Minimum $Start -Maximum (Get-Random -Minimum ($Start + 1) -Maximum ($Start + 78))
+        $Content[$Start..$End] -join "" | Out-String
+    }
+
+    End {}
 }
 
 function GetBits {
@@ -576,13 +530,14 @@ if (-not($MaxSamples)) {
 $BytePairDist = @{}
 
 # In the outter loop here we encrypt our plaintext with a randomly generated key
-for ($i = 2; $i -le $MaxKeySize ; $i++) {
+for ($i = $MinKeySize; $i -le $MaxKeySize ; $i++) {
 
     # Here's a key byte array
     [byte[]]$keyArray = @()
 
     # Convert our plaintext to a byte array
     $plaintext = GetPlaintext
+    
     $byteArray = GetBytes -String $plaintext
     
     [byte[]]$CipherByteArray,[byte[]]$sample,[byte[]]$keyArray = @()
@@ -608,7 +563,7 @@ for ($i = 2; $i -le $MaxKeySize ; $i++) {
     $CipherByteCount = $CipherByteArray.Count
     $MaxAllowableSamples = [int]($CipherByteCount / 2) - 1
     $MaxAllowableKeySize = [int]($CipherByteCount)
-    $MaxCalcKeySize = [int]($i * 3)
+    $MaxCalcKeySize = [int]($i * 4)
 
     if ($MaxSamples -gt $MaxAllowableSamples) {
         Write-Verbose ("-MaxSamples of {0} was too large. Setting to {1}, ((CipherByteArray.Count / min(keysize)) - 1." -f $MaxSamples, $MaxAllowableSamples)
@@ -704,14 +659,101 @@ for ($i = 2; $i -le $MaxKeySize ; $i++) {
     } | ? { $_.NAvgHDRank -le 6 })
     #>
 
-    $gcd = 0
-    $obj = "" | Select-Object ActualKeySize,ProbableKeySize,Top${top}KeySizes,GCD,PlainText,Key
+    $GCDs = @{}
+    $obj = "" | Select-Object ActualKeySize,ProbableKeySize,Top${top}KeySizes,Top${top}NAvgHDs,GCD,PlainText,Key
+
+    <#
+    $TopObjs.CalcKeySize | ForEach-Object {
+        if ($GCDs.Contains($_)) {
+            $GCDs.set_item($_, $GCDs[$_] + 1)
+        } else {
+            $GCDs.Add($_, 1)
+        }
+    }
+    #>
 
     for ($p = 0; $p -lt $TopObjs.Count - 1; $p++) {
+        for ($q = $p + 1; $q -lt $TopObjs.Count -1; $q++) {
+
+            $gcd = GetGreatestCommonDenominator -val1 $TopObjs[$p].CalcKeySize -val2 $TopObjs[$q].CalcKeySize
+
+            if ($GCDs.Contains($gcd)) {
+                $GCDs.set_item($gcd, $GCDs[$gcd] + 1)
+            } else {
+                $GCDs.Add($gcd, 1)
+            }
+            # Write-Verbose ("val1 is {0}, val2 is {1}, GCD is {2}, count is {3}" -f ($TopObjs[$p].CalcKeySize), ($TopObjs[$q].CalcKeySize), $gcd, ($GCDs[$gcd]) )
+        }      
+
+        $MostFreqGCD = $GCDs.GetEnumerator() | Sort-Object @{Expression={$_.Value -as [int]}},@{Expression={$_.Name -as [int]}} | Select-Object -Last 1 -ExpandProperty Name
+
+        if (($TopObjs[0..($TopObjs.Count - 1)].CalcKeySize).Contains($MostFreqGCD) -and `
+            ($TopObjs | ? { $_.CalcKeySize -eq $MostFreqGCD -and $_.NAvgHD -lt $MaxNAvgHD})) {
+                $ProbableKeySize = $MostFreqGCD
+        } else {
+            # $ProbableKeySize = ([int]$TopObjs[0].CalcKeySize, [int]$TopObjs[1].CalcKeySize | Sort-Object) -join " or "
+            $ProbableKeySize1 = ([int]$TopObjs[0].CalcKeySize, [int]$TopObjs[1].CalcKeySize | Measure -Minimum).Minimum 
+            
+            $MinNAvgHD = ($TopObjs[0..($TopObjs.Count - 1)].NAvgHD | Measure-Object -Minimum).Minimum
+            $ProbableKeySize2 = $TopObjs | ? { $_.NAvgHD -eq $MinNAvgHD } | Select-Object -ExpandProperty CalcKeySize
+            
+            if ($ProbableKeySize1 -eq $ProbableKeySize2) {
+                $ProbableKeySize = $ProbableKeySize1
+            } else {
+                if ($TopObjs | ? { $_.CalcKeySize -eq $ProbableKeySize1 -and $_.NAvgHD -lt $MaxNAvgHD } ) {
+                    $ProbableKeySize = $ProbableKeySize1
+                } else {
+                    $ProbableKeySize = $ProbableKeySize2
+                    # $ProbableKeySize = ($ProbableKeySize1,$ProbableKeySize2 | Sort-Object) -join " or "
+                }
+            }
+        }
+        $obj.ActualKeySize = $TopObjs[$p].KeySize
+        $obj.ProbableKeySize = $ProbableKeySize
+        $obj."Top${top}KeySizes" = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join ":"
+        $obj."Top${top}NAvgHDs" = $TopObjs[0..($TopObjs.Count - 1)].NAvgHD -join " : "
+        $obj.PlainText = $plaintext
+        $obj.Key = $keyArray -join ":"
+        $obj | Select-Object ActualKeySize,ProbableKeySize,Top${top}KeySizes,Top${top}NAvgHDs,PlainText,Key
+        break
+
+<#
         $gcd12 = (GetGreatestCommonDenominator -val1 ($TopObjs[$p].CalcKeySize) -val2 ($TopObjs[$p + 1].CalcKeySize))
         $gcd13 = (GetGreatestCommonDenominator -val1 ($TopObjs[$p].CalcKeySize) -val2 ($TopObjs[$p + 2].CalcKeySize))
         $gcd23 = (GetGreatestCommonDenominator -val1 ($TopObjs[$p + 1].CalcKeySize) -val2 ($TopObjs[$p + 2].CalcKeySize))
 
+        if ($gcd12 -ne 1) {
+            if ($gcd12 -eq $gcd13 -eq $gcd23) {
+                if (($TopObjs[0..($TopObjs.Count - 1)].CalcKeySize).Contains($gcd12)) {
+                    $ProbableKeySize = $gcd12
+                }
+            } elseif (($gcd12 -eq $gcd23) -and ($gcd23 -ne 1) -and (($TopObjs[0..($TopObjs.Count - 1)].CalcKeySize).Contains($gcd23))) {
+                $ProbableKeySize = $gcd23
+            } elseif (($gcd13 -eq $gcd23) -and ($gcd13 -ne 1) -and (($TopObjs[0..($TopObjs.Count - 1)].CalcKeySize).Contains($gcd23))) {
+                $ProbableKeySize = $gcd23
+            } elseif (($TopObjs[0..($TopObjs.Count - 1)].CalcKeySize).Contains($gcd12)) {
+                $ProbableKeySize = $gcd12
+            } else {
+                $ProbableKeySize = ($TopObjs[0].CalcKeySize)
+            }
+            $obj.ActualKeySize = $TopObjs[$p].KeySize
+            $obj.ProbableKeySize = $ProbableKeySize
+            $obj."Top${top}KeySizes" = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join ":"
+            $obj.PlainText = $plaintext
+            $obj.Key = $keyArray -join ":"
+            $obj | Select-Object ActualKeySize,ProbableKeySize,Top${top}KeySizes,PlainText,Key
+            break
+        } else {
+            $obj.ActualKeySize = $TopObjs[$p].KeySize
+            $obj.ProbableKeySize = ("{0} uncertain" -f ($TopObjs[$p].CalcKeySize))
+            $obj."Top${top}KeySizes" = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join ":"
+            $obj.PlainText = $plaintext
+            $obj.Key = $keyArray -join ":"
+            $obj | Select-Object ActualKeySize,ProbableKeySize,Top${top}KeySizes,PlainText,Key
+            break
+        }
+
+<#
         if (($gcd12 -ne 1) -and (($TopObjs[0..($TopObjs.Count - 1)].CalcKeySize).Contains($gcd12)) -and (($gcd12 -eq $gcd13 -eq $gcd23) -or ($gcd12 -eq $TopObjs[$p].CalcKeySize) -or ($gcd12 -eq $TopObjs[$p + 1].CalcKeySize))) {
             $obj.ActualKeySize = $TopObjs[$p].KeySize
             $obj.ProbableKeySize = $gcd12
@@ -729,6 +771,7 @@ for ($i = 2; $i -le $MaxKeySize ; $i++) {
             $obj | Select-Object ActualKeySize,ProbableKeySize,Top${top}KeySizes,PlainText,Key
             break
         }
+#>
         # Write-Verbose ("KeySize is {0}, GCD is {3}, CalcKeySize is {1}, next CalcKeySize is {2}" -f $TopObjs[$p].KeySize, $TopObjs[$p].CalcKeySize, $TopObjs[$p + 1].CalcKeySize, $gcd)
     }
 }
