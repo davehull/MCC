@@ -3,26 +3,7 @@
 XOR-Brutr.ps1 brute force decrypts XOR encrypted data. The data may be
 read from the command line via the -String argument or from a file via
 the -File argument.
-.EXAMPLE
-XOR-Brutr.ps1 -String 36190f580f1b090107014e42140c1e5509550752
-Key             : fun!
-EncryptedText   : 36190f580f1b090107014e42140c1e5509550752
-DecryptedText   : Playing at crypto is
-Entropy         : 3.68418371977919
-LetterFreqScore : 305
-BiGramScore     : 362
-TriGramScore    : 144
-TotalScore      : 838.143054637349
-.EXAMPLE
-XOR-Brutr.ps1 -File 6.txt
-Key             :
-EntryptedText   :
-DecryptedText   :
-Entropy         :
-LetterFreqScore :
-BiGramScore     :
-TriGramScore    :
-TotalScore      :
+
 #>
 
 
@@ -38,7 +19,11 @@ Param(
         [String]$File,
     [Parameter(Mandatory=$False,Position=4)]
         [ValidateSet("base16","base64")]
-        [String]$Encoding="base16"
+        [String]$Encoding="base16",
+    [Parameter(Mandatory=$False,Position=5)]
+        [int]$top=5,
+    [Parameter(Mandatory=$False,Position=6)]
+        [float]$MaxNAvgHD=3.5
 )
 
 function GetBytes {
@@ -102,33 +87,6 @@ Param(
     }
 }
 
-<#
-function GetHammingDistance {
-Param(
-    [Parameter(Mandatory=$True,Position=0)]
-        [byte[]]$ByteArray1,
-    [Parameter(Mandatory=$True,Position=1)]
-        [byte[]]$ByteArray2
-)
-    if ($ByteArray1.Count -ne $ByteArray2.Count) {
-        Write-Error ("Hamming Distance can't be calculated because byte arrays are different lengths, {0} and {1}." -f $ByteArray1.Count, $ByteArray2.Count)
-        return $False
-    } else {
-        $count = 0
-        for ($i = 0; $i -lt $ByteArray1.Count; $i++) {
-            $bits = (GetBits ($ByteArray1[$i] -bxor $ByteArray2[$i]))
-
-            for ($j = 0; $j -lt $bits.Length; $j++) {
-                if ($bits[$j] -eq '1') {
-                    $count++
-                }
-            }
-        }
-        $count        
-    }
-}
-#>
-
 function GetCountBytes {
 # Takes a byte array, a number of bytes and a starting index in the
 # array, returns the number of bytes requested as an array of bytes
@@ -166,7 +124,7 @@ Param(
             if ($_) {
                 $ByteInbase16 = [String]::Format("{0:D}", $_)
                 $Paddedbase16 = $ByteInbase16.PadLeft(2,"0")
-                [System.Convert]::ToByte( $Paddedbase16, 16 )
+                [System.Convert]::ToByte($Paddedbase16, 16 )
             }
         }
     })
@@ -201,6 +159,34 @@ Param (
     } else {
         GetGreatestCommonDenominator -val1 $val2 -val2 ($val1 % $val2)
     }        
+}
+
+function GetTransposedBlock {
+Param(
+    [Parameter(Mandatory=$True,Position=0)]
+        [int]$KeySize,
+    [Parameter(Mandatory=$True,Position=1)]
+        [Array]$CipherByteArray,
+    [Parameter(Mandatory=$True,Position=2)]
+        [int]$KeyPosition
+)
+    # This function returns an array of every $KeySize byte beginning at $KeyPosition
+    # If $KeySize is 4 and $KeyPosition is 0, it returns an array of 0, 4, 8, 12... bytes
+    # If $KeySize is 29 and $KeyPosition is 1, it returns an array of 1, 30, 59... bytes
+    
+    # The byte array will be input to a separate single character XOR brute forcing 
+    # function. If the $KeySize is right, the right byte value XOR'd against the array 
+    # will produce output with a "letter frequency" score resembling English letter 
+    # frequency. Whatever that byte value is, it is likely to be the right byte value for 
+    # the given $KeyPosition
+
+    $BlockArray = @()
+    $index = $KeyPosition
+    while($index -lt $CipherByteArray.Count) {
+        $BlockArray += $CipherByteArray[$index]
+        $index += $KeySize
+    }
+    $BlockArray
 }
 
 [byte[]]$CipherByteArray,[byte[]]$sample = @()
@@ -241,6 +227,7 @@ if (-not($MaxSamples)) {
     $NoUserMaxSamples = $True
 }
 
+
 $CipherByteCount = $CipherByteArray.Count
 $MaxAllowableSamples = [int]($CipherByteCount / 2)
 $MaxAllowableKeySize = [int]($CipherByteCount)
@@ -280,20 +267,20 @@ for ($CalcKeySize = 2; $CalcKeySize -le $MaxKeySize; $CalcKeySize++) {
         $End   = (($CalcKeySize - 1) * ($i + 2) + 1) + $i
         # Write-Verbose ("Start is {0}. End is {1}. CipherByteCount is {2}." -f $Start, $End, $CipherByteCount)
         if ($End -gt $CipherByteCount) {
-            Write-Verbose ("Index too high, can't read {0} bytes from CipherByteArray. Continuing." -f $End)
+            # Write-Verbose ("Index too high, can't read {0} bytes from CipherByteArray. Continuing." -f $End)
             # continue
         }
         $ByteArray2 = $CipherByteArray[$Start..$End]
         if ($ByteArray1.Count -eq $ByteArray2.Count) {
             $HDs += (GetHammingDistance $ByteArray1 $ByteArray2 $BytePairDist)
-            Write-Verbose ("HDs : {0}, Normalized : {1}, ByteArray1 : {2}, ByteArray2 : {3}" -f $HDs[$i], ($HDs[$i] / $ByteArray1.Count), ($ByteArray1 -join ","), ($ByteArray2 -join ",")) 
+            # Write-Verbose ("HDs : {0}, Normalized : {1}, ByteArray1 : {2}, ByteArray2 : {3}" -f $HDs[$i], ($HDs[$i] / $ByteArray1.Count), ($ByteArray1 -join ","), ($ByteArray2 -join ",")) 
             # Write-Verbose ("ByteArrays are: {0} and {1}" -f ($ByteArray1 -join ":"), ($ByteArray2 -join ":"))
             # if (($HDs.Count % 450) -eq 0) { Write-Verbose ("HDs is {0}. ByteArray.Count is {1}" -f ($HDs -join ","), $ByteArray1.Count) }
             # if (($ByteArray1.Count % 29) -eq 0) { Write-Verbose ("HDs : {0}, Normalized : {1}, ByteArray1 : {2}, ByteArray2 : {3}" -f $HDs[$i], ($HDs[$i] / $ByteArray1.Count), ($ByteArray1 -join ","), ($ByteArray2 -join ",")) }
         }
     }
     if ($HDs) {
-        Write-Verbose ("HD: {0}" -f ($HDs -join ","))
+        # Write-Verbose ("HD: {0}" -f ($HDs -join ","))
         $AvgHD = ($HDs | Measure-Object -Average | Select-Object -ExpandProperty Average)
         $NAvgHD = $AvgHD / $CalcKeySize
         $obj = "" | Select-Object CalcKeySize,AvgHD,NAvgHD
@@ -303,34 +290,55 @@ for ($CalcKeySize = 2; $CalcKeySize -le $MaxKeySize; $CalcKeySize++) {
         $objs += $obj
     }
 }
-    
-$a = 1
-$AvgHDSortObj = @()
- 
-# Sort objects on average Hamming Distance, set AvgHDRank and
-# populate new object array, $AvgHDSortObj
-$objs | sort AvgHD | ForEach-Object {
-   $obj = "" | Select-Object AvgHDRank,CalcKeySize,AvgHD,NAvgHD
-   $obj.AvgHDRank = $a
-   $obj.CalcKeySize = $_.CalcKeySize
-   $obj.AvgHD = $_.AvgHD
-   $obj.NAvgHD = $_.NAvgHD
-   $a++
-   $AvgHDSortObj += $obj
-}
-    
-$a = 1
 
-# Now sort $AvgHDSortObj array of objects by Normalized Average Hamming Distance and
-# assign a ranking
-# $NAvgHDSortObj = @()
-$AvgHDSortObj | sort NAvgHD | ForEach-Object {
-    $obj = "" | Select-Object AvgHDRank,NAvgHDRank,CalcKeySize,AvgHD,NAvgHD
-    $obj.AvgHDRank = $_.AvgHDRank
-    $obj.NAvgHDRank = $a
-    $obj.CalcKeySize = $_.CalcKeySize
-    $obj.AvgHD = $_.AvgHD
-    $obj.NAvgHD = $_.NAvgHD
-    $a++
-    $obj | Select-Object CalcKeySize,AvgHDRank,NAvgHDRank,AvgHD,NAvgHD
-} | Sort-Object NAvgHDRank,CalcKeySize
+$TopObjs = $objs | Sort-Object NAvgHD | Select-Object -First $top
+
+$GCDs = @{}
+$obj = "" | Select-Object ProbableKeySize,Top${top}KeySizes,Top${top}NAvgHDs,GCD
+
+for ($p = 0; $p -lt $TopObjs.Count - 1; $p++) {
+    for ($q = $p + 1; $q -lt $TopObjs.Count -1; $q++) {
+
+        $gcd = GetGreatestCommonDenominator -val1 $TopObjs[$p].CalcKeySize -val2 $TopObjs[$q].CalcKeySize
+        if ($GCDs.Contains($gcd)) {
+            $GCDs.set_item($gcd, $GCDs[$gcd] + 1)
+        } else {
+            $GCDs.Add($gcd, 1)
+        }
+        # Write-Verbose ("val1 is {0}, val2 is {1}, GCD is {2}, count is {3}" -f ($TopObjs[$p].CalcKeySize), ($TopObjs[$q].CalcKeySize), $gcd, ($GCDs[$gcd]) )
+    }      
+
+    $MostFreqGCD = $GCDs.GetEnumerator() | Sort-Object @{Expression={$_.Value -as [int]}},@{Expression={$_.Name -as [int]}} | Select-Object -Last 1 -ExpandProperty Name
+
+    if (($TopObjs[0..($TopObjs.Count - 1)].CalcKeySize).Contains($MostFreqGCD) -and `
+        ($TopObjs | ? { $_.CalcKeySize -eq $MostFreqGCD -and $_.NAvgHD -lt $MaxNAvgHD})) {
+            $ProbableKeySize = $MostFreqGCD
+    } else {
+        # $ProbableKeySize = ([int]$TopObjs[0].CalcKeySize, [int]$TopObjs[1].CalcKeySize | Sort-Object) -join " or "
+        $ProbableKeySize1 = ([int]$TopObjs[0].CalcKeySize, [int]$TopObjs[1].CalcKeySize | Measure -Minimum).Minimum
+        
+        $MinNAvgHD = ($TopObjs[0..($TopObjs.Count - 1)].NAvgHD | Measure-Object -Minimum).Minimum
+        $ProbableKeySize2 = $TopObjs | ? { $_.NAvgHD -eq $MinNAvgHD } | Select-Object -ExpandProperty CalcKeySize
+        
+        if ($ProbableKeySize1 -eq $ProbableKeySize2) {
+            $ProbableKeySize = $ProbableKeySize1
+        } else {
+            if ($TopObjs | ? { $_.CalcKeySize -eq $ProbableKeySize1 -and $_.NAvgHD -lt $MaxNAvgHD } ) {
+                $ProbableKeySize = $ProbableKeySize1
+            } else {
+                $ProbableKeySize = $ProbableKeySize2
+                # $ProbableKeySize = ($ProbableKeySize1,$ProbableKeySize2 | Sort-Object) -join " or "
+            }
+        }
+    }
+    $obj.ProbableKeySize = $ProbableKeySize
+    $obj."Top${top}KeySizes" = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join ":"
+    $obj."Top${top}NAvgHDs" = $TopObjs[0..($TopObjs.Count - 1)].NAvgHD -join " : "
+    $obj | Select-Object ProbableKeySize,Top${top}KeySizes,Top${top}NAvgHDs | Format-Table -AutoSize
+    break
+}
+
+# (GetTransposedKeySizeBlocks -KeySize $obj.ProbableKeySize -CipherByteArray $CipherByteArray).GetEnumerator() | Select-Object -ExpandProperty Value
+(0..($obj.ProbableKeySize - 1)) | ForEach-Object {
+    (GetTransposedBlock -KeySize $obj.ProbableKeySize -CipherByteArray $CipherByteArray -KeyPosition $_) -join ","
+}
