@@ -68,8 +68,8 @@ Param(
     [Parameter(Mandatory=$False,Position=2)]
         [String]$key,
     [Parameter(Mandatory=$False,Position=3)]
-        [ValidateSet("hex","base64")]
-        [String]$Encoding="hex"
+        [ValidateSet("base16","base64")]
+        [String]$Encoding="base16"
 )
 
 
@@ -631,7 +631,7 @@ Param(
 }
 
 switch ($Encoding) {
-    "hex" {
+    "base16" {
         $byteArray = ConvertHex-ToByte -hexString $String
     }
     "base64" {
