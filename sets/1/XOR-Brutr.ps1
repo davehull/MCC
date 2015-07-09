@@ -23,8 +23,18 @@ Param(
     [Parameter(Mandatory=$False,Position=5)]
         [int]$top=5,
     [Parameter(Mandatory=$False,Position=6)]
-        [float]$MaxNAvgHD=3.5
+        [float]$MaxNAvgHD=3.5,
+    [Parameter(Mandatory=$False,Position=7)]
+        [switch]$includeNonPrintable
 )
+
+function GetByte {
+Param(
+    [Parameter(Mandatory=$True,Position=0)]
+        [Char]$key
+)
+    [System.Text.Encoding]::Default.GetBytes($key)
+}
 
 function GetBytes {
 Param(
@@ -189,6 +199,132 @@ Param(
     $BlockArray
 }
 
+function Score-LetterFrequency {
+Param(
+    [Parameter(Mandatory=$True,Position=0)]
+        [String]$DecodedString
+)
+    $Score = 0
+    $DecodedUpper = $DecodedString.ToUpper()
+
+    # Score the string according to English letter frequency counts
+    for($i = 0; $i -lt $DecodedUpper.Length; $i++) {
+        switch -Regex ($DecodedUpper[$i]) {
+            "[^-A-Z0-9!@#$~%^&*)(\[\]\.\\:;<>,.?/'```" ]" {
+                $Score -= 100
+            }
+            "E" {
+                $Score += 26
+            }
+            "T" {
+                $Score += 25
+            }
+            "A" {
+                $Score += 24
+            }
+            "O" {
+                $Score += 23
+            }
+            "I" {
+                $Score += 22
+            }
+            "N" {
+                $Score += 21
+            }
+            "S" {
+                $Score += 20
+            }
+            "R" {
+                $Score += 19
+            }
+            "H" {
+                $Score += 18
+            }
+            "L" {
+                $Score += 17
+            }
+            "D" {
+                $Score += 16
+            }
+            "C" {
+                $Score += 15
+            }
+            "U" {
+                $Score += 14
+            }
+            "M" {
+                $Score += 13
+            }
+            "F" {
+                $Score += 12
+            }
+            "P" {
+                $Score += 11
+            }
+            "G" {
+                $Score += 10
+            }
+            "W" {
+                $Score += 09
+            }
+            "Y" {
+                $Score += 08
+            }
+            "B" {
+                $Score += 07
+            }
+            "V" {
+                $Score += 06
+            }
+            "K" {
+                $Score += 05
+            }
+            "X" {
+                $Score += 04
+            }
+            "J" {
+                $Score += 03
+            }
+            "Q" {
+                $Score += 02
+            }
+            "Z" {
+                $Score += 01
+            }
+            Default {
+                $Score +=  0
+            }
+        }
+    }
+    $Score
+}
+
+function PopulateObject {
+Param(
+    [Parameter(Mandatory=$True,Position=0)]
+        [byte[]]$xordbytes,
+    [Parameter(ParameterSetName='unknownKey')]
+        [Char]$keyChar
+)
+
+    $obj = "" | Select-Object Key,EncryptedText,DecryptedText,LetterFreqScore
+
+    $DecodedString = $(
+        foreach($byte in $xordBytes) {
+            [Char]$byte
+        }
+    ) -join ""
+    
+    if ($keyChar) {
+        $obj.Key = $keyChar
+    }
+    $obj.EncryptedText   = $String
+    $obj.DecryptedText   = $DecodedString.Trim()
+    $obj.LetterFreqScore = [int](Score-LetterFrequency -DecodedString $DecodedString)
+
+    $obj | Select-Object Key,EncryptedText,DecryptedText,LetterFreqScore
+}
+
 [byte[]]$CipherByteArray,[byte[]]$sample = @()
 
 switch ($PSCmdlet.ParameterSetName) {
@@ -334,11 +470,68 @@ for ($p = 0; $p -lt $TopObjs.Count - 1; $p++) {
     $obj.ProbableKeySize = $ProbableKeySize
     $obj."Top${top}KeySizes" = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join ":"
     $obj."Top${top}NAvgHDs" = $TopObjs[0..($TopObjs.Count - 1)].NAvgHD -join " : "
-    $obj | Select-Object ProbableKeySize,Top${top}KeySizes,Top${top}NAvgHDs | Format-Table -AutoSize
+    # $obj | Select-Object ProbableKeySize,Top${top}KeySizes,Top${top}NAvgHDs | Format-Table -AutoSize
     break
 }
 
 # (GetTransposedKeySizeBlocks -KeySize $obj.ProbableKeySize -CipherByteArray $CipherByteArray).GetEnumerator() | Select-Object -ExpandProperty Value
+$ProbableKey = @()
+
 (0..($obj.ProbableKeySize - 1)) | ForEach-Object {
-    (GetTransposedBlock -KeySize $obj.ProbableKeySize -CipherByteArray $CipherByteArray -KeyPosition $_) -join ","
+    $ProbableKey += ""
+    $HighScoreObj = $False
+    $TransposedByteArray = GetTransposedBlock -KeySize $obj.ProbableKeySize -CipherByteArray $CipherByteArray -KeyPosition $_
+
+    if ($includeNonPrintable) {
+        (0..255) | ForEach-Object {
+            $keyspace += $_
+        }
+    } else {
+        $keyspace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~``!@#$%^&*()_-+={}[]\|:;`"'<>,.?/ "
+    }        
+
+    for ($j = 0; $j -lt $keyspace.Length; $j++) {
+        # Write-Verbose ("Now trying: {0}" -f ($keyspace[$j]))
+        $keyByte = GetByte $keyspace[$j]
+        $xordBytes = $(
+            for ($i = 0; $i -lt $TransposedByteArray.Count; $i++) {
+                $TransposedByteArray[$i] -bxor $keyByte
+            }
+        )
+  
+        $brutedObj = PopulateObject -xordbytes $xordBytes -keyChar $keyspace[$j]
+
+        if (-not($HighScoreObj)) {
+            $HighScoreObj = $brutedObj.PSObject.Copy()
+        } else {
+            if ($brutedObj.LetterFreqScore -gt $HighScoreObj.LetterFreqScore) {
+                $HighScoreObj = $brutedObj.PSObject.Copy()
+                $ProbableKey[$_] = $keyspace[$j]
+                # Write-Verbose ("Position {0} byte is probably {1} as byte or {2} as char." -f $_, $KeyByte, $ProbableKey[$_])
+            }
+        }
+    }
 }
+
+$keybytes   = GetBytes ($ProbableKey -join "")
+$xordBytes  = $(
+    for ($i = 0; $i -lt $CipherByteArray.Count) {
+        for ($j = 0; $j -lt $keyBytes.Length; $j++) {
+            $CipherByteArray[$i] -bxor $keybytes[$j]
+            $i++
+            if ($i -ge $CipherByteArray.Count) {
+                $j = $keyBytes.Length
+            }
+        }
+    }
+)
+
+$DecryptedString = $(
+    foreach($byte in $xordBytes) {
+        [Char]$byte
+    }
+) -join ""
+
+$obj | Add-Member NoteProperty ProbableKey ($ProbableKey -join "")
+$obj | Add-Member NoteProperty ProbableDecryptedValue $DecryptedString
+$obj | Select-Object ProbableKeySize,ProbableKey,ProbableDecryptedValue,Top${top}KeySizes,Top${top}NavgHDs
