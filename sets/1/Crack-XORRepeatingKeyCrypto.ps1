@@ -251,6 +251,10 @@ Param(
     # Converts a base16 (hexadecimal) string to a byte array
     # Example: ConvertBase16-ToByte -base16String "101011"
     # Returns: @(16,16,17)
+    if ($base16String -match "([^a-fA-F0-9])") {
+        Write-Error ("Input string or file does not appear to be encoded as base16. Quitting.")
+        exit
+    }
     $byteArray = $(if ($base16String.Length -eq 1) {
         ([System.Convert]::ToByte( $base16String, 16))
     } elseif ($base16String.Length % 2 -eq 0) {
@@ -273,7 +277,13 @@ Param(
     # Takes a Base64 encoded string and returns a byte array
     # Example: ConvertBase64-ToByte -base64String "AAAB"
     # Returns: @(0,0,1)
-    [System.Convert]::FromBase64String($base64String)
+    Try {
+        $Error.Clear()
+        [System.Convert]::FromBase64String($base64String)
+    } Catch {
+        Write-Error ("Input string or file does not match Base64 encoding. Quitting.")
+        exit
+    }
 }
 
 function GetGreatestCommonDenominator {
