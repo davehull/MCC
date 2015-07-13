@@ -207,17 +207,20 @@ Param(
         $Total = 0
         for ($i = 0; $i -lt $ByteArray1.Count; $i++) {
             $bitCount = 0
-            # $pair and $rpair are equivalent (10:15 -eq 15:10)
             $pair  = $(($ByteArray1[$i],$ByteArray2[$i]) -join ":")
             $rpair = $(($ByteArray2[$i],$ByteArray1[$i]) -join ":")
             if ($pair -eq $rpair) { 
-                # Write-Verbose ("pair is {0}, Hamming Distance is 0" -f $pair)
+                # $pair and $rpair are equivalent (10:10 -eq 10:10)
                 # Hamming Distance between identical bytes is 0
                 continue
             } elseif ($BytePairDist.Contains($pair) -or $BytePairDist.Contains($rpair)) {
+                # Our hashtable already has the Hamming Distance for 
+                # this byte pair. Lookup the distance in the table and
+                # move on, it's faster than recalculating
                 $bitCount += $BytePairDist[$pair]
-                # Write-Verbose ("pair is {0}, Hamming Distance is {1}" -f $pair, $bitCount)
             } else {
+                # Our hashtable doesn't contain this byte pair.
+                # Calculate the Hamming Distance 
                 $bits = (GetBits ($ByteArray1[$i] -bxor $ByteArray2[$i]))
 
                 for ($j = 0; $j -lt $bits.Length; $j++) {
@@ -225,7 +228,12 @@ Param(
                         $bitCount++
                     }
                 }
-                # Write-Verbose ("pair is {0}, Hamming Distance is {1}" -f $pair, $bitCount)
+                # Store the byte pair and the reverse in our hashtable
+                # along with the distance, so we can look it up next
+                # time. Lookup is faster than recalculating.
+                # We store the reverse too because the HD between byte
+                # pairs AB and BA is the same as the HD between byte
+                # pairs BA and AB
                 $BytePairDist.Add($pair,$bitCount)
                 $BytePairDist.Add($rpair,$bitCount)
             }
@@ -233,30 +241,6 @@ Param(
         }
         $Total
     }
-}
-
-function GetCountBytes {
-# Takes a byte array, a number of bytes and a starting index in the
-# array, returns the number of bytes requested as an array of bytes
-Param(
-    [Parameter(Mandatory=$True,Position=0)]
-        [byte[]]$ByteArray,
-    [Parameter(Mandatory=$True,Position=1)]
-        [int]$numBytes,
-    [Parameter(Mandatory=$True,Position=2)]
-        [int]$startPos
-)
-    [byte[]]$RetByteArray = @()
-
-    if ($startPos + $numBytes -gt $ByteArray.Length) {
-        Write-Error ("Reading {0} bytes starting at {1} exceeds the length of `$ByteArray." -f $numBytes, $startPos)
-        Exit
-    }
-
-    for ($i = $startPos; $i -lt ($startPos + $numBytes); $i++) {
-        $RetByteArray += $ByteArray[$i]
-    }
-    $RetByteArray
 }
 
 function ConvertBase16-ToByte {
@@ -267,7 +251,7 @@ Param(
     # Converts a base16 (hexadecimal) string to a byte array
     # Example: ConvertBase16-ToByte -base16String "101011"
     # Returns: @(16,16,17)
-    $byteString = $(if ($base16String.Length -eq 1) {
+    $byteArray = $(if ($base16String.Length -eq 1) {
         ([System.Convert]::ToByte( $base16String, 16))
     } elseif ($base16String.Length % 2 -eq 0) {
         $base16String -split "([a-fA-F0-9]{2})" | ForEach-Object {
@@ -278,7 +262,7 @@ Param(
             }
         }
     })
-    $byteString
+    $byteArray
 }
 
 function ConvertBase64-ToByte {
@@ -322,7 +306,7 @@ Param(
     [Parameter(Mandatory=$True,Position=2)]
         [int]$KeyPosition
 )
-    # This function returns an array of every byte at $KeySize offset
+    # This function returns an array of every byte at $KeySize offsets
     # beginning at $KeyPosition. If $KeySize is 4 and $KeyPosition is
     # 0, it returns an array of bytes 0, 4, 8, 12... 
     # If $KeySize is 29 and $KeyPosition is 1, it returns an array of 
@@ -353,12 +337,18 @@ Param(
     $DecodedUpper = $DecodedString.ToUpper()
 
     # Score the string according to English letter frequency counts
+    # Scores were set arbitrarily by me, though I did play around 
+    # with different values
     for($i = 0; $i -lt $DecodedUpper.Length; $i++) {
         switch -Regex ($DecodedUpper[$i]) {
             "[^-A-Z0-9!@#$~%^&*)(\[\]\.\\:;<>,.?/'```" \n]" {
+                # byte is not an ASCII printable character, deduct
+                # 100 points from the score
                 $Score -= 100
             }
             "E" {
+                # Below is the frequency table for English letters
+                # We score each letter according to frequency
                 $Score += 78
             }
             "T" {
@@ -445,7 +435,7 @@ Param(
     $Score
 }
 
-function PopulateObject {
+function GetEnglishScore {
 Param(
     [Parameter(Mandatory=$True,Position=0)]
         [byte[]]$xordbytes,
@@ -471,6 +461,10 @@ Param(
     $obj | Select-Object Key,LetterFreqScore
 }
 
+
+
+# All functions defined, let's get to work
+# Create a byte array for our ciphertext
 [byte[]]$CipherByteArray
 
 # Were we called with -String, -File, -base16 or -base64
@@ -684,7 +678,7 @@ $ProbableKey = @()
   
         # Get an object with the key and the English letter frequency
         # score for the given transposed, xor'd block of bytes
-        $brutedObj = PopulateObject -xordbytes $xordBytes -keyChar $keyspace[$j]
+        $brutedObj = GetEnglishScore -xordbytes $xordBytes -keyChar $keyspace[$j]
 
         if (-not($HighScoreObj)) {
             # First run, no $HighScoreObj
