@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
 Crack-XORRepeatingKeyCrypto.ps1 uses well-known attack techniques to 
 break XOR repeating key cryptography of English language text.
@@ -20,6 +20,8 @@ The script will return an object with some metadata about its analysis,
 including the top n key sizes (where n is an argument provided by the
 user via the -top parameter) and the normalized average Hamming
 Distances for each of those top n key sizes.
+.PARAMETER MinKeySize
+an optional parameter for lower bound of the key
 .PARAMETER MaxKeySize
 An optional parameter that sets the upper-bound on the key size to try.
 If not supplied by the user, the script will set this to half the size
@@ -150,7 +152,9 @@ Param(
     [Parameter(Mandatory=$False,Position=6)]
         [float]$MaxNAvgHD=3.5,
     [Parameter(Mandatory=$False,Position=7)]
-        [switch]$includeNonPrintable
+        [switch]$includeNonPrintable,
+    [Parameter(Mandatory=$False,Position=8)]
+        [int]$MinKeySize=$False,
 )
 
 function GetByte {
@@ -526,7 +530,9 @@ if ($MaxSamples -gt $MaxAllowableSamples) {
     Write-Verbose ("-MaxSamples of {0} was too large. Setting to {1}, ((CipherByteArray.Count / min(keysize)) - 1." -f $MaxSamples, $MaxAllowableSamples)
     $MaxSamples = $MaxAllowableSamples
 }
-
+if ($MinKeySize -eq $False) {
+	$MinKeySize = 2
+}
 if ($MaxKeySize -eq $False) {
     Write-Verbose ("No MaxKeySize value provided, defaulting to half the input size. Depending on the input size, this could take some time.")
     $MaxKeySize = $MaxAllowableKeySize
@@ -543,7 +549,7 @@ $BytePairDist = @{}  # a hashtable of Hamming Distances of byte pairs
 # MaxKeySize. But what if the key size is one byte? If that's the case
 # use XOR-Decrypt.ps1 for single-byte repeating XOR key crypto, it's
 # faster and far more accurate.
-for ($CalcKeySize = 2; $CalcKeySize -le $MaxKeySize; $CalcKeySize++) {
+for ($CalcKeySize = $MinKeySize; $CalcKeySize -le $MaxKeySize; $CalcKeySize++) {
     $HDs = @()  # An array of Hamming Distances
 
     if ($NoUserMaxSamples) {
