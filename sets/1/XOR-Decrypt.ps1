@@ -378,7 +378,7 @@ Param(
                 $Score += 43
             }
             "HER" {
-                $Score += 43
+                $Score += 42
             }
             "TER" {
                 $Score += 41
