@@ -209,7 +209,7 @@ Param(
                 $Score += 43
             }
             "EN" {
-                $Score += 43
+                $Score += 42
             }
             "ND" {
                 $Score += 41
