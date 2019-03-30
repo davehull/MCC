@@ -154,7 +154,7 @@ Param(
     [Parameter(Mandatory=$False,Position=7)]
         [switch]$includeNonPrintable,
     [Parameter(Mandatory=$False,Position=8)]
-        [int]$MinKeySize=$False,
+        [int]$MinKeySize=$False
 )
 
 function GetByte {
