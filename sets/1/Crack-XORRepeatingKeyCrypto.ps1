@@ -157,6 +157,9 @@ Param(
         [int]$MinKeySize=$False
 )
 
+$error.clear()
+$ErrorActionPreference = 'Stop'
+
 function GetByte {
 Param(
     [Parameter(Mandatory=$True,Position=0)]
@@ -164,7 +167,7 @@ Param(
 )
     # Takes a character as input, returns the byte value
     # Example: GetByte "A" returns 65
-    [System.Text.Encoding]::Default.GetBytes($key)
+    [System.Text.Encoding]::Unicode.GetBytes($key)[0]
 }
 
 function GetBytes {
@@ -673,11 +676,15 @@ $ProbableKey = @()
     # What's our keyspace? Default is ASCII printable characters only,
     # but if the user passed -includeNonPrintable, we'll try all bytes
     # 0 - 255
-    if ($includeNonPrintable) {
+    if ($includeNonPrintable) 
+    {
+        $keyspace = @()
         (0..255) | ForEach-Object {
-            $keyspace += $_
+            $keyspace += [char]$_
         }
-    } else {
+        $keyspace = $keyspace -join ''
+    } else 
+    {
         $keyspace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~``!@#$%^&*()_-+={}[]\|:;`"'<>,.?/ "
     }  
     
