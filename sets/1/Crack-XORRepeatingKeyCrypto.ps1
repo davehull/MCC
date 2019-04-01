@@ -678,11 +678,7 @@ $ProbableKey = @()
     # 0 - 255
     if ($includeNonPrintable) 
     {
-        $keyspace = @()
-        (0..255) | ForEach-Object {
-            $keyspace += [char]$_
-        }
-        $keyspace = $keyspace -join ''
+        $keyspace = [char[]](0..255) -join ''
     } else 
     {
         $keyspace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~``!@#$%^&*()_-+={}[]\|:;`"'<>,.?/ "
