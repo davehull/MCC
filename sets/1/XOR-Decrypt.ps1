@@ -73,6 +73,9 @@ Param(
 )
 
 
+$error.clear()
+$ErrorActionPreference = 'Stop'
+
 function Score-LetterFrequency {
 Param(
     [Parameter(Mandatory=$True,Position=0)]
@@ -540,7 +543,7 @@ Param(
     [Parameter(Mandatory=$True,Position=0)]
         [Char]$key
 )
-    [System.Text.Encoding]::Default.GetBytes($key)
+    [System.Text.Encoding]::Unicode.GetBytes($key)[0]
 }
 
 function GetBytes {
@@ -570,7 +573,7 @@ Param(
     ) -join ""
     
     if ($keyChar) {
-        $obj.Key = $keyChar
+        $obj.Key = [byte]$keyChar
     } else {
         $obj.Key = $keyString
     }
@@ -659,12 +662,14 @@ if ($key.Length -gt 1) {
 
     $obj = PopulateObject -xordbytes $xordBytes -keyString $key
 
-    $obj | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
+    # $obj | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
+    $obj | Select-Object Key,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
 
 } else {
 
     # Should fix keyspace to be more than just Ascii printable characters because it's weaksauce
-    $keyspace   = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~``!@#$%^&*()_-+={}[]\|:;`"'<>,.?/ "
+    # $keyspace   = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~``!@#$%^&*()_-+={}[]\|:;`"'<>,.?/ "
+    $keyspace = [char[]](1..255) -join ''
 
     for ($j = 0; $j -lt $keyspace.Length; $j++) {
         $keyByte = GetByte $keyspace[$j]
@@ -677,7 +682,8 @@ if ($key.Length -gt 1) {
         $obj = PopulateObject -xordbytes $xordBytes -keyChar $keyspace[$j]
 
         if ($AllResults) {
-            $obj | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
+            # $obj | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
+            $obj | Select-Object Key,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
         } else {
             if (-not($HighScoreObj)) {
                 $HighScoreObj = $obj.PSObject.Copy()
@@ -689,6 +695,7 @@ if ($key.Length -gt 1) {
         }
     }
     if (-not($AllResults)) {
-        $HighScoreObj | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
+        # $HighScoreObj | Select-Object Key,EncryptedText,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
+        $HighScoreObj | Select-Object Key,DecryptedText,Entropy,LetterFreqScore,BiGramScore,TriGramScore,TotalScore
     }
 }
