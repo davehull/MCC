@@ -587,7 +587,9 @@ for ($CalcKeySize = $MinKeySize; $CalcKeySize -le $MaxKeySize; $CalcKeySize++) {
         # Store the results in an object, then we'll add that object to
         # our array of objects
         $AvgHD = ($HDs | Measure-Object -Average | Select-Object -ExpandProperty Average)
+        Write-Verbose ('$AvgHD: {0}' -f $AvgHD)
         $NAvgHD = $AvgHD / $CalcKeySize
+        Write-Verbose ('Normalized AvgHD: {0}' -f $NAvgHD)
         $obj = "" | Select-Object CalcKeySize,AvgHD,NAvgHD
         $obj.CalcKeySize = $CalcKeySize
         $obj.AvgHD = $AvgHD
