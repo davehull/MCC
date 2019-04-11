@@ -607,6 +607,11 @@ for ($CalcKeySize = $MinKeySize; $CalcKeySize -le $MaxKeySize; $CalcKeySize++) {
 }
 
 # Pull out the top n objects based on user's -top arg, default is five
+# if there are less than $top objs, reset $top accordingly
+if ($top -gt $objs.count)
+{
+    $top = $objs.count
+}
 $TopObjs = $objs | Sort-Object NAvgHD | Select-Object -First $top
 
 # Make a hashtable for storing greatest common denominators and their
@@ -614,7 +619,7 @@ $TopObjs = $objs | Sort-Object NAvgHD | Select-Object -First $top
 $GCDs = @{} 
 
 # Instantiate a new $obj with different properties
-$obj = "" | Select-Object ProbableKeySize,Top${top}KeySizes,Top${top}NAvgHDs,GCD
+$obj = "" | Select-Object ProbableKeySize,"Top ${top} KeySizes","Top ${top} NAvgHDs",GCD
 
 
 # This nested loop will cacluate greatest common denominators for each
@@ -674,8 +679,8 @@ for ($p = 0; $p -lt $TopObjs.Count; $p++) {
     }
     # Now that we have the probable key size, build out object and exit
     $obj.ProbableKeySize = $ProbableKeySize
-    $obj."Top${top}KeySizes" = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join ":"
-    $obj."Top${top}NAvgHDs" = $TopObjs[0..($TopObjs.Count - 1)].NAvgHD -join " : "
+    $obj."Top ${top} KeySizes" = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join ":"
+    $obj."Top ${top} NAvgHDs" = $TopObjs[0..($TopObjs.Count - 1)].NAvgHD -join " : "
     break
 }
 
@@ -685,7 +690,8 @@ $ProbableKey = @()
 # Try and figure out what the byte is for each position in our key
 (0..($obj.ProbableKeySize - 1)) | ForEach-Object {
     $ProbableKey += ""
-    $HighScoreObj = $False
+    $HighScoreObj = $null
+    Write-Verbose ('Starting...')
 
     # GetTransposedBlock will return an array of key size aligned bytes
     # if key size is 4, it will return bytes 0, 3, 7, 11... assuming
@@ -709,6 +715,7 @@ $ProbableKey = @()
     # array, $xordBytes
     for ($j = 0; $j -lt $keyspace.Length; $j++) {
         $keyByte = GetByte $keyspace[$j]
+        # Write-Verbose ('$keyByte is {0}' -f $keyByte)
         $xordBytes = $(
             for ($i = 0; $i -lt $TransposedByteArray.Count; $i++) {
                 $TransposedByteArray[$i] -bxor $keyByte
@@ -718,17 +725,20 @@ $ProbableKey = @()
         # Get an object with the key and the English letter frequency
         # score for the given transposed, xor'd block of bytes
         $brutedObj = GetEnglishScore -xordbytes $xordBytes -keyChar $keyspace[$j]
+        # Write-Verbose ('English score is {0}' -f $brutedObj.LetterFreqScore)
 
-        if (-not($HighScoreObj)) {
+        if ($HighScoreObj -eq $null) {
             # First run, no $HighScoreObj
             $HighScoreObj = $brutedObj.PSObject.Copy()
+            Write-Verbose ('New English high score of {0} using byte value {1}' -f $HighScoreObj.LetterFreqScore, $keyByte)
         } else {
             # The English letter frequency score was higher for this
             # key byte, update the $HighScoreObj and store the new
             # ProbableKey for this byte position of the key
-            if ($brutedObj.LetterFreqScore -gt $HighScoreObj.LetterFreqScore) {
+            if ([int]$brutedObj.LetterFreqScore -gt [int]$HighScoreObj.LetterFreqScore) {
                 $HighScoreObj = $brutedObj.PSObject.Copy()
                 $ProbableKey[$_] = $keyspace[$j]
+                Write-Verbose ('New English high score of {0} using byte value {1}' -f $HighScoreObj.LetterFreqScore, $keyByte)
             }
         }
     }
@@ -764,4 +774,4 @@ $DecryptedString = $(
 # Build an object to return to the user
 $obj | Add-Member NoteProperty ProbableKey ($ProbableKey -join "")
 $obj | Add-Member NoteProperty ProbableDecryptedValue $DecryptedString
-$obj | Select-Object ProbableKeySize,ProbableKey,ProbableDecryptedValue,Top${top}KeySizes,Top${top}NavgHDs
+$obj | Select-Object ProbableKeySize,ProbableKey,ProbableDecryptedValue,"Top ${top} KeySizes","Top ${top} NavgHDs"
