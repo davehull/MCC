@@ -57,7 +57,7 @@ ASCII characters to all bytes 0x00 through 0xFF.
 Crack-XORRepeatingKeyCrypto.ps1 -String "JhkPTTlMBgoVBE0FHEUSERUFUA1FCxECCFAJHQQVEQEVTBENGRVNBwMXDgtBGhUACUUeDh9QGA0AWAkIHBxFAxENCE8=" -Encoding base64 -MaxKeySize 21
 
 
-ProbableKeySize        : 7
+Probable Key Size        : 7
 ProbableKey            : example
 ProbableDecryptedValue : Can I come up with a nice example that works well for the help file?
 Top5KeySizes           : 9:7:19:14:3
@@ -78,7 +78,7 @@ ABRIFQAKRQ4bBg0WUg8GTEFUAwwXE2VjU3QBFgACVQ4XDxtIDhxMDX4qQXQDAFkSAQcWACocTBRNCQwY
 Crack-XORRepeatingKeyCrypto.ps1 -File .\7-encrypted.txt -Encoding base64 -MaxKeySize 26
 
 
-ProbableKeySize        : 13
+Probable Key Size        : 13
 ProbableKey            : this is a key
 ProbableDecryptedValue : Way back when, in sixty-seven
                           I was the dandy of gamma chi
@@ -606,105 +606,129 @@ for ($CalcKeySize = $MinKeySize; $CalcKeySize -le $MaxKeySize; $CalcKeySize++) {
     }
 }
 
+Write-Verbose ('$objs.count is {0}' -f $objs.count)
+Write-Verbose ('$objs is {0}' -f $objs)
 # Pull out the top n objects based on user's -top arg, default is five
 # if there are less than $top objs, reset $top accordingly
 if ($top -gt $objs.count)
 {
     $top = $objs.count
 }
-$TopObjs = $objs | Sort-Object NAvgHD | Select-Object -First $top
+
+if ($top -gt 1) {
+    $TopObjs = $objs | Sort-Object NAvgHD | Select-Object -First $top
+} 
+else 
+{
+    $TopObjs = $objs
+}
 
 # Make a hashtable for storing greatest common denominators and their
 # frequency of occurrence
 $GCDs = @{} 
 
 # Instantiate a new $obj with different properties
-$obj = "" | Select-Object ProbableKeySize,"Top ${top} KeySizes","Top ${top} NAvgHDs",GCD
+$obj = "" | Select-Object 'Probable Key Size',"Top ${top} KeySizes","Top ${top} NAvgHDs",GCD
 
 
 # This nested loop will cacluate greatest common denominators for each
 # of the caluclated key sizes in the top n objects
 Write-Verbose ('$TopObjs.count is {0}' -f $TopObjs.count)
-for ($p = 0; $p -lt $TopObjs.Count; $p++) {
-    for ($q = $p + 1; $q -lt $TopObjs.Count; $q++) {
+if ($TopObjs.count -gt 1) 
+{
+    for ($p = 0; $p -lt $TopObjs.Count; $p++) {
+        for ($q = $p + 1; $q -lt $TopObjs.Count; $q++) {
 
-        $gcd = GetGreatestCommonDenominator -val1 $TopObjs[$p].CalcKeySize -val2 $TopObjs[$q].CalcKeySize
-        if ($GCDs.Contains($gcd)) {
-            # We've seen this GCD before, increment its count
-            $GCDs.set_item($gcd, $GCDs[$gcd] + 1)
+            $gcd = GetGreatestCommonDenominator -val1 $TopObjs[$p].CalcKeySize -val2 $TopObjs[$q].CalcKeySize
+            if ($GCDs.Contains($gcd)) {
+                # We've seen this GCD before, increment its count
+                $GCDs.set_item($gcd, $GCDs[$gcd] + 1)
+            } else {
+                # We've not seen this GCD before, add it to out table
+                $GCDs.Add($gcd, 1)
+            }
+        }      
+
+        # $MostFreqGCD is the GCD that appeared most frequently in the list
+        # of top n calculated key sizes, if this value is in the list of 
+        # the top n calculated key sizes, it is almost certainly the actual
+        # key size
+        $MostFreqGCD = $GCDs.GetEnumerator() | Sort-Object @{Expression={$_.Value -as [int]}},@{Expression={$_.Name -as [int]}} | Select-Object -Last 1 -ExpandProperty Name
+        Write-Verbose ('$MostFreqGCD is {0}' -f $MostFreqGCD)
+
+        if (($TopObjs[0..($TopObjs.Count - 1)].CalcKeySize).Contains($MostFreqGCD) -and `
+            ($TopObjs | ? { $_.CalcKeySize -eq $MostFreqGCD -and $_.NAvgHD -lt $MaxNAvgHD})) {
+                $ProbableKeySize = $MostFreqGCD
         } else {
-            # We've not seen this GCD before, add it to out table
-            $GCDs.Add($gcd, 1)
-        }
-    }      
+            # $MostFreqGCD was not in the top n calculated key sizes
+            # Set $ProbableKeySize1 to the smaller of the first two
+            # calculated key sizes
+            $ProbableKeySize1 = ([int]$TopObjs[0].CalcKeySize, [int]$TopObjs[1].CalcKeySize | Measure -Minimum).Minimum
+            
+            # Get the minimum Normalized average Hamming Distance from the 
+            # top n calculated key sizes and set $ProbableKeySize2 to that
+            # calculated key size
+            $MinNAvgHD = ($TopObjs[0..($TopObjs.Count - 1)].NAvgHD | Measure-Object -Minimum).Minimum
+            $ProbableKeySize2 = $TopObjs | ? { $_.NAvgHD -eq $MinNAvgHD } | Select-Object -ExpandProperty CalcKeySize
+            
 
-    # $MostFreqGCD is the GCD that appeared most frequently in the list
-    # of top n calculated key sizes, if this value is in the list of 
-    # the top n calculated key sizes, it is almost certainly the actual
-    # key size
-    $MostFreqGCD = $GCDs.GetEnumerator() | Sort-Object @{Expression={$_.Value -as [int]}},@{Expression={$_.Name -as [int]}} | Select-Object -Last 1 -ExpandProperty Name
-    Write-Verbose ('$MostFreqGCD is {0}' -f $MostFreqGCD)
-
-    if (($TopObjs[0..($TopObjs.Count - 1)].CalcKeySize).Contains($MostFreqGCD) -and `
-        ($TopObjs | ? { $_.CalcKeySize -eq $MostFreqGCD -and $_.NAvgHD -lt $MaxNAvgHD})) {
-            $ProbableKeySize = $MostFreqGCD
-    } else {
-        # $MostFreqGCD was not in the top n calculated key sizes
-        # Set $ProbableKeySize1 to the smaller of the first two
-        # calculated key sizes
-        $ProbableKeySize1 = ([int]$TopObjs[0].CalcKeySize, [int]$TopObjs[1].CalcKeySize | Measure -Minimum).Minimum
-        
-        # Get the minimum Normalized average Hamming Distance from the 
-        # top n calculated key sizes and set $ProbableKeySize2 to that
-        # calculated key size
-        $MinNAvgHD = ($TopObjs[0..($TopObjs.Count - 1)].NAvgHD | Measure-Object -Minimum).Minimum
-        $ProbableKeySize2 = $TopObjs | ? { $_.NAvgHD -eq $MinNAvgHD } | Select-Object -ExpandProperty CalcKeySize
-        
-
-        if ($ProbableKeySize1 -eq $ProbableKeySize2) {
-            # The smallest calculated key size also has the smallest
-            # NAvgHD and so is probably our key size
-            $ProbableKeySize = $ProbableKeySize1
-        } else {
-            if ($TopObjs | ? { $_.CalcKeySize -eq $ProbableKeySize1 -and $_.NAvgHD -lt $MaxNAvgHD } ) {
-                # Hm, if $ProbableKeySize1 has a NAvgHD below the max
-                # allowed NAvgHD, let's take it as our key size
+            if ($ProbableKeySize1 -eq $ProbableKeySize2) {
+                # The smallest calculated key size also has the smallest
+                # NAvgHD and so is probably our key size
                 $ProbableKeySize = $ProbableKeySize1
             } else {
-                # Well, maybe the right key size is the one with the
-                # smallest NAvgHD
-                $ProbableKeySize = $ProbableKeySize2
+                if ($TopObjs | ? { $_.CalcKeySize -eq $ProbableKeySize1 -and $_.NAvgHD -lt $MaxNAvgHD } ) {
+                    # Hm, if $ProbableKeySize1 has a NAvgHD below the max
+                    # allowed NAvgHD, let's take it as our key size
+                    $ProbableKeySize = $ProbableKeySize1
+                } else {
+                    # Well, maybe the right key size is the one with the
+                    # smallest NAvgHD
+                    $ProbableKeySize = $ProbableKeySize2
+                }
             }
         }
+        # Now that we have the probable key size, build out object and exit
+        $obj.'Probable Key Size' = $ProbableKeySize
+        $obj."Top ${top} KeySizes" = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join ":"
+        $obj."Top ${top} NAvgHDs" = $TopObjs[0..($TopObjs.Count - 1)].NAvgHD -join " : "
+        break
     }
-    # Now that we have the probable key size, build out object and exit
-    $obj.ProbableKeySize = $ProbableKeySize
-    $obj."Top ${top} KeySizes" = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join ":"
-    $obj."Top ${top} NAvgHDs" = $TopObjs[0..($TopObjs.Count - 1)].NAvgHD -join " : "
-    break
 }
-
+else 
+{
+    if ($CipherByteCount % 2)
+    {
+        $obj.'Probable Key Size' = ($CipherByteCount - 1) / 2
+    }
+    else 
+    {
+        $obj.'Probable Key Size' = $CipherByteCount / 2
+    }
+    $obj."Top ${top} Keysizes" = $objs[0].CalcKeySize
+    $obj."Top ${top} NAvgHDs" = $objs[0].NAvgHD
+}
 # Make an array for our probable key
 $ProbableKey = @()
 
 # Try and figure out what the byte is for each position in our key
-(0..($obj.ProbableKeySize - 1)) | ForEach-Object {
+for ($a = 0; $a -lt $obj.'Probable Key Size'; $a++) {
     $ProbableKey += ""
     $HighScoreObj = $null
-    Write-Verbose ('Starting...')
+    Write-Verbose ('Brute forcing key byte position {0} of {1}' -f ($a + 1), $obj.'Probable Key Size')
 
     # GetTransposedBlock will return an array of key size aligned bytes
     # if key size is 4, it will return bytes 0, 3, 7, 11... assuming
     # $KeyPosition is 0, if $KeyPosition is 2 and key size is 6, it
     # will return an array of bytes 2, 7, 13, 19...
-    $TransposedByteArray = GetTransposedBlock -KeySize $obj.ProbableKeySize -CipherByteArray $CipherByteArray -KeyPosition $_
+    $TransposedByteArray = GetTransposedBlock -KeySize $obj.'Probable Key Size' -CipherByteArray $CipherByteArray -KeyPosition $a
 
     # What's our keyspace? Default is ASCII printable characters only,
     # but if the user passed -includeNonPrintable, we'll try all bytes
     # 0 - 255
     if ($includeNonPrintable) 
     {
-        $keyspace = [char[]](0..255) -join ''
+        $keyspace = [char[]](1..255) -join ''
     } else 
     {
         $keyspace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~``!@#$%^&*()_-+={}[]\|:;`"'<>,.?/ "
@@ -737,7 +761,7 @@ $ProbableKey = @()
             # ProbableKey for this byte position of the key
             if ([int]$brutedObj.LetterFreqScore -gt [int]$HighScoreObj.LetterFreqScore) {
                 $HighScoreObj = $brutedObj.PSObject.Copy()
-                $ProbableKey[$_] = $keyspace[$j]
+                $ProbableKey[$a] = $keyspace[$j]
                 Write-Verbose ('New English high score of {0} using byte value {1}' -f $HighScoreObj.LetterFreqScore, $keyByte)
             }
         }
@@ -745,7 +769,7 @@ $ProbableKey = @()
 }
 
 # We've got the most probable key, build an array of those bytes
-$keybytes   = GetBytes ($ProbableKey -join "")
+$keybytes = GetBytes ($ProbableKey -join "")
 
 # Now we're going to take our array of probable key bytes and xor the
 # original $CipherByteArray against that array
@@ -772,6 +796,12 @@ $DecryptedString = $(
 ) -join ""
 
 # Build an object to return to the user
-$obj | Add-Member NoteProperty ProbableKey ($ProbableKey -join "")
-$obj | Add-Member NoteProperty ProbableDecryptedValue $DecryptedString
-$obj | Select-Object ProbableKeySize,ProbableKey,ProbableDecryptedValue,"Top ${top} KeySizes","Top ${top} NavgHDs"
+$ProbableKeyBytes = @()
+foreach($char in $ProbableKey) {
+    Write-Verbose ('$char is {0}' -f [byte][char]$char)
+    $ProbableKeyBytes += [byte][char]$char
+}
+$obj | Add-Member NoteProperty 'Probable Key' ($ProbableKey -join "")
+$obj | Add-Member NoteProperty 'Probable Key Bytes' ($ProbableKeyBytes -join ' ')
+$obj | Add-Member NoteProperty 'Probable Decrypted Value' $DecryptedString
+$obj | Select-Object 'Probable Key Size','Probable Key','Probable Key Bytes','Probable Decrypted Value',"Top ${top} KeySizes","Top ${top} NavgHDs"
