@@ -563,10 +563,18 @@ $BytePairDist = @{}  # a hashtable of Hamming Distances of byte pairs
 for ($CalcKeySize = $MinKeySize; $CalcKeySize -le $MaxKeySize; $CalcKeySize++) {
     $HDs = @()  # An array of Hamming Distances
 
+    Write-Verbose ('$CalcKeySize is: {0}' -f $CalcKeySize)
     if ($NoUserMaxSamples) {
         # As the keysize being tried increases, the sample size decreases
-        $MaxSamples = ([int]($CipherByteCount - 1) / $CalcKeySize)
+        if ($CipherByteCount % 2)
+        {
+            $MaxSamples = ([int]($CipherByteCount - 1) / $CalcKeySize)
+        } else 
+        {
+            $MaxSamples = ([int]($CipherByteCount) / $CalcKeySize)    
+        }        
     }
+    Write-Verbose ('$MaxSamples: {0}' -f $MaxSamples)
 
     for ($i = 0; $i -lt $MaxSamples; $i++) {
         # Build a pair of byte arrays based on our keysize
@@ -611,6 +619,7 @@ $obj = "" | Select-Object ProbableKeySize,Top${top}KeySizes,Top${top}NAvgHDs,GCD
 
 # This nested loop will cacluate greatest common denominators for each
 # of the caluclated key sizes in the top n objects
+Write-Verbose ('$TopObjs.count is {0}' -f $TopObjs.count)
 for ($p = 0; $p -lt $TopObjs.Count - 1; $p++) {
     for ($q = $p + 1; $q -lt $TopObjs.Count - 1; $q++) {
 
@@ -629,6 +638,7 @@ for ($p = 0; $p -lt $TopObjs.Count - 1; $p++) {
     # the top n calculated key sizes, it is almost certainly the actual
     # key size
     $MostFreqGCD = $GCDs.GetEnumerator() | Sort-Object @{Expression={$_.Value -as [int]}},@{Expression={$_.Name -as [int]}} | Select-Object -Last 1 -ExpandProperty Name
+    Write-Verbose ('$MostFreqGCD is {0}' -f $MostFreqGCD)
 
     if (($TopObjs[0..($TopObjs.Count - 1)].CalcKeySize).Contains($MostFreqGCD) -and `
         ($TopObjs | ? { $_.CalcKeySize -eq $MostFreqGCD -and $_.NAvgHD -lt $MaxNAvgHD})) {
