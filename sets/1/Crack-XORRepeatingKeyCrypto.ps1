@@ -246,6 +246,7 @@ Param(
             }
             $Total += $bitCount
         }
+        Write-Verbose ('Hamming Distance of {0} and {1} is {2}' -f ($ByteArray1 -join ' '), ($ByteArray2 -join ' '), $Total)
         $Total
     }
 }
@@ -526,8 +527,15 @@ if (-not($MaxSamples)) {
 # Get our count once, we're going to need it multiple places
 $CipherByteCount = $CipherByteArray.Count
 
-# The following can't exceed half the CipherByteCount
-$MaxAllowableKeySize = $MaxAllowableSamples = [int]($CipherByteCount - 1) / 2
+# For repeating key XOR, max can't exceed half the CipherByteCount
+if ($CipherByteCount % 2)
+{
+    $MaxAllowableKeySize = $MaxAllowableSamples = [int]($CipherByteCount - 1) / 2
+} else 
+{
+    $MaxAllowableKeySize = $MaxAllowableSamples = [int]($CipherByteCount) / 2
+}
+
 
 if ($MaxSamples -gt $MaxAllowableSamples) {
     Write-Verbose ("-MaxSamples of {0} was too large. Setting to {1}, ((CipherByteArray.Count / min(keysize)) - 1." -f $MaxSamples, $MaxAllowableSamples)
