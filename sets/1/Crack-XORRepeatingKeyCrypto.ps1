@@ -620,8 +620,8 @@ $obj = "" | Select-Object ProbableKeySize,Top${top}KeySizes,Top${top}NAvgHDs,GCD
 # This nested loop will cacluate greatest common denominators for each
 # of the caluclated key sizes in the top n objects
 Write-Verbose ('$TopObjs.count is {0}' -f $TopObjs.count)
-for ($p = 0; $p -lt $TopObjs.Count - 1; $p++) {
-    for ($q = $p + 1; $q -lt $TopObjs.Count - 1; $q++) {
+for ($p = 0; $p -lt $TopObjs.Count; $p++) {
+    for ($q = $p + 1; $q -lt $TopObjs.Count; $q++) {
 
         $gcd = GetGreatestCommonDenominator -val1 $TopObjs[$p].CalcKeySize -val2 $TopObjs[$q].CalcKeySize
         if ($GCDs.Contains($gcd)) {
