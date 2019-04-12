@@ -19,6 +19,10 @@ objects, by default the script will only return the object with the
 highest score -- the object with the decrypted string that's most 
 likely to be sensible English text based on letter frequency, bigrams
 and trigrams. Oh my!
+.PARAMETER PreserveNull
+Some malware uses a "Null preserving" single-byte XOR encryption scheme
+where if the byte to be decrypted is null or is equal to the key being
+used, the byte is skipped.
 .EXAMPLE
 XOR-Decrypt.ps1 -String 093235282e7a292e2833343d7a3d352e7a34357a283f3b293534
 Key             : Z
@@ -66,8 +70,10 @@ Param(
     [Parameter(Mandatory=$False,Position=1)]
         [Switch]$AllResults,
     [Parameter(Mandatory=$False,Position=2)]
-        [String]$key,
+        [Switch]$PreserveNull,
     [Parameter(Mandatory=$False,Position=3)]
+        [String]$key,
+    [Parameter(Mandatory=$False,Position=4)]
         [ValidateSet("base16","base64")]
         [String]$Encoding="base16"
 )
@@ -643,7 +649,7 @@ switch ($Encoding) {
 }
 
 
-if ($key.Length -gt 1) {
+if ($key.Length -ge 1) {
     # We have a key, we don't need to guess
     # This needs to be refactored to remove duped code, but I wanted to
     # see if it worked.
@@ -651,7 +657,17 @@ if ($key.Length -gt 1) {
     $xordBytes  = $(
         for ($i = 0; $i -lt $byteArray.Length) {
             for ($j = 0; $j -lt $keyBytes.Length; $j++) {
-                $byteArray[$i] -bxor $keybytes[$j]
+                if ($PreserveNull)
+                {
+                    if ($byteArray[$i] -ne 0 -And $byteArray[$i] -ne $keybytes[$j]) 
+                    {
+                        $byteArray[$i] -bxor $keybytes[$j]
+                    }
+                }
+                else 
+                {
+                    $byteArray[$i] -bxor $keybytes[$j]    
+                }
                 $i++
                 if ($i -ge $byteArray.Length) {
                     $j = $keyBytes.Length
