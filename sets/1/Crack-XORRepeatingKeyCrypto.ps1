@@ -53,6 +53,10 @@ Distance allowed for a probable key. The default is 3.5.
 .PARAMETER includeNonPrintable
 A switch that causes the script to expand the keyspace from printable
 ASCII characters to all bytes 0x00 through 0xFF.
+.PARAMETER PreserveNull
+Some XOR schemes use a "Null preserving" technique where if the ciphertext
+byte is null or is the same as the key byte, the xor operation is skipped
+for that byte.
 .EXAMPLE
 Crack-XORRepeatingKeyCrypto.ps1 -String "JhkPTTlMBgoVBE0FHEUSERUFUA1FCxECCFAJHQQVEQEVTBENGRVNBwMXDgtBGhUACUUeDh9QGA0AWAkIHBxFAxENCE8=" -Encoding base64 -MaxKeySize 21
 
@@ -154,7 +158,9 @@ Param(
     [Parameter(Mandatory=$False,Position=7)]
         [switch]$includeNonPrintable,
     [Parameter(Mandatory=$False,Position=8)]
-        [int]$MinKeySize=$False
+        [int]$MinKeySize=$False,
+    [Parameter(Mandatory=$False,Position=9)]
+        [switch]$PreserveNull
 )
 
 $error.clear()
@@ -742,7 +748,17 @@ for ($a = 0; $a -lt $obj.'Probable Key Size'; $a++) {
         # Write-Verbose ('$keyByte is {0}' -f $keyByte)
         $xordBytes = $(
             for ($i = 0; $i -lt $TransposedByteArray.Count; $i++) {
-                $TransposedByteArray[$i] -bxor $keyByte
+                if ($PreserveNull) 
+                {
+                    if ($TransposedByteArray[$i] -ne 0 -And $TransposedByteArray[$i] -ne $keyByte)
+                    {
+                        $TransposedByteArray[$i] -bxor $keyByte
+                    }
+                }
+                else 
+                {
+                    $TransposedByteArray[$i] -bxor $keyByte                    
+                }
             }
         )
   
@@ -798,8 +814,15 @@ $DecryptedString = $(
 # Build an object to return to the user
 $ProbableKeyBytes = @()
 foreach($char in $ProbableKey) {
-    Write-Verbose ('$char is {0}' -f [byte][char]$char)
-    $ProbableKeyBytes += [byte][char]$char
+    # Write-Verbose ('$char is {0}' -f [byte][char]$char)
+    if ($char)
+    {
+        $ProbableKeyBytes += [byte][char]$char
+    }
+    else 
+    {
+        $ProbableKeyBytes += '00'    
+    }
 }
 $obj | Add-Member NoteProperty 'Probable Key' ($ProbableKey -join "")
 $obj | Add-Member NoteProperty 'Probable Key Bytes' ($ProbableKeyBytes -join ' ')
