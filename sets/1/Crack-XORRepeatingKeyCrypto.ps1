@@ -809,7 +809,7 @@ $DecryptedString = $(
     foreach($byte in $xordBytes) {
         [Char]$byte
     }
-) -join ""
+) -join ''
 
 # Build an object to return to the user
 $ProbableKeyBytes = @()
@@ -827,4 +827,5 @@ foreach($char in $ProbableKey) {
 $obj | Add-Member NoteProperty 'Probable Key' ($ProbableKey -join "")
 $obj | Add-Member NoteProperty 'Probable Key Bytes' ($ProbableKeyBytes -join ' ')
 $obj | Add-Member NoteProperty 'Probable Decrypted Value' $DecryptedString
-$obj | Select-Object 'Probable Key Size','Probable Key','Probable Key Bytes','Probable Decrypted Value',"Top ${top} KeySizes","Top ${top} NavgHDs"
+$obj | Add-Member NoteProperty 'Probable Decrypted Bytes' ($xordBytes -join ' ')
+$obj | Select-Object 'Probable Key Size','Probable Key','Probable Key Bytes','Probable Decrypted Value','Probable Decrypted Bytes',"Top ${top} KeySizes","Top ${top} NavgHDs"
