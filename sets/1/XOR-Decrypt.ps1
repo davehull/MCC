@@ -20,9 +20,9 @@ highest score -- the object with the decrypted string that's most
 likely to be sensible English text based on letter frequency, bigrams
 and trigrams. Oh my!
 .PARAMETER PreserveNull
-Some malware uses a "Null preserving" single-byte XOR encryption scheme
-where if the byte to be decrypted is null or is equal to the key being
-used, the byte is skipped.
+Some XOR schemes use a "Null preserving" technique where if the ciphertext
+byte is null or is the same as the key byte, the xor operation is skipped
+for that byte.
 .EXAMPLE
 XOR-Decrypt.ps1 -String 093235282e7a292e2833343d7a3d352e7a34357a283f3b293534
 Key             : Z
