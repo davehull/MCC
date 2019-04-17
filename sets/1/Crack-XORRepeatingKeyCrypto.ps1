@@ -493,34 +493,34 @@ Param(
 
 # Were we called with -String, -File, -base16 or -base64
 switch ($PSCmdlet.ParameterSetName) {
-    "String" {
+    'String' {
 
         switch ($Encoding) {
-            "base16" {
+            'base16' {
                 $CipherByteArray = ConvertBase16-ToByte -base16String $String
             }
-            "base64" {
+            'base64' {
                $CipherByteArray = ConvertBase64-ToByte -base64String $String
             }
         }
     }
-    "File" {
+    'File' {
         if ($Path = Resolve-Path $File) {
             $File = ls $Path
-            $FileByteString = ([System.IO.File]::ReadAllText($File)) -join ""
+            $FileByteString = ([System.IO.File]::ReadAllText($File)) -join ''
 
             switch ($Encoding) {
-                "base16" {
+                'base16' {
                     $CipherByteArray = ConvertBase16-ToByte -base16String $FileByteString
                 }
-                "base64" {
+                'base64' {
                     $CipherByteArray = ConvertBase64-ToByte -base64String $FileByteString
                 }
             }
         }
     }
     Default {
-        Write-Host ("Missing argument.")
+        Write-Host ('Missing argument.')
     }
 }
 
