@@ -144,13 +144,13 @@ Param(
         [int]$MaxKeySize=$False,
     [Parameter(Mandatory=$False,Position=3)]
         [int]$MaxSamples=$False,
-    [Parameter(ParameterSetName="String",Mandatory=$False,Position=0)]
+    [Parameter(ParameterSetName='String',Mandatory=$False,Position=0)]
         [String]$String,
-    [Parameter(ParameterSetName="File",Mandatory=$False,Position=1)]
+    [Parameter(ParameterSetName='File',Mandatory=$False,Position=1)]
         [String]$File,
     [Parameter(Mandatory=$False,Position=4)]
-        [ValidateSet("base16","base64")]
-        [String]$Encoding="base16",
+        [ValidateSet('base16','base64',$null)]
+        [String]$Encoding,
     [Parameter(Mandatory=$False,Position=5)]
         [int]$top=5,
     [Parameter(Mandatory=$False,Position=6)]
@@ -485,7 +485,23 @@ Param(
     $obj | Select-Object Key,LetterFreqScore
 }
 
-
+function GetEncoding {
+    Param(
+        [Parameter(Mandatory=$True,Position=0)]
+            [string]$ProtectedString
+    )
+    if ($ProtectedString -match '[0-9]+[A-F]+[a-f]+[=\\+]*')
+    {
+        # Encoding must be base64
+        'base64'
+    }
+    else
+    {
+        # Encoding could be base16
+        'base16'
+        Write-Verbose ('Encoding may be base16, but that is a subset of base64. If decoding fails, you might try running with "-Encoding base64."')
+    }
+}
 
 # All functions defined, let's get to work
 # Create a byte array for our ciphertext
@@ -494,6 +510,11 @@ Param(
 # Were we called with -String, -File, -base16 or -base64
 switch ($PSCmdlet.ParameterSetName) {
     'String' {
+
+        if (-not ($Encoding -match 'base16|base64'))
+        {
+            $Encoding = GetEncoding $String
+        }
 
         switch ($Encoding) {
             'base16' {
