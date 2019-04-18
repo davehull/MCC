@@ -508,40 +508,41 @@ function GetEncoding {
 [byte[]]$CipherByteArray
 
 # Were we called with -String, -File, -base16 or -base64
-switch ($PSCmdlet.ParameterSetName) {
-    'String' {
-
-        if (-not ($Encoding -match 'base16|base64'))
-        {
-            $Encoding = GetEncoding $String
-        }
-
-        switch ($Encoding) {
-            'base16' {
-                $CipherByteArray = ConvertBase16-ToByte -base16String $String
-            }
-            'base64' {
-               $CipherByteArray = ConvertBase64-ToByte -base64String $String
-            }
-        }
+switch ($PSCmdlet.ParameterSetName) 
+{
+    'String' 
+    {
+        # Nothnig to do for string
     }
-    'File' {
-        if ($Path = Resolve-Path $File) {
+    'File' 
+    {
+        if ($Path = Resolve-Path $File) 
+        {
+            # Read file into $String
             $File = ls $Path
-            $FileByteString = ([System.IO.File]::ReadAllText($File)) -join ''
-
-            switch ($Encoding) {
-                'base16' {
-                    $CipherByteArray = ConvertBase16-ToByte -base16String $FileByteString
-                }
-                'base64' {
-                    $CipherByteArray = ConvertBase64-ToByte -base64String $FileByteString
-                }
-            }
+            $String = ([System.IO.File]::ReadAllText($File)) -join ''
         }
     }
     Default {
-        Write-Host ('Missing argument.')
+        Write-Error ('No -File or -String argument provided. Nothing to do. Run Get-Help {0} for assistance on usage.' -f $MyInvocation.MyCommand.Name)
+        Exit
+    }
+}
+
+if (-not ($Encoding -match 'base16|base64'))
+{
+    $Encoding = GetEncoding $String
+}
+
+switch ($Encoding)
+{
+    'base16'
+    {
+        $CipherByteArray = ConvertBase16-ToByte -base16String $String
+    }
+    'base64'
+    {
+        $CipherByteArray = ConvertBase64-ToByte -base64String $String
     }
 }
 
