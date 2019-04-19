@@ -589,15 +589,18 @@ $CipherByteCount = $CipherByteArray.Count
 # For repeating key XOR, max can't exceed half the CipherByteCount
 if ($CipherByteCount % 2)
 {
+    $CipherByteCountIsEven = $False
     $MaxAllowableKeySize = $MaxAllowableSamples = [int]($CipherByteCount - 1) / 2
 } 
 else 
 {
+    $CipherByteCountIsEven = $True
     $MaxAllowableKeySize = $MaxAllowableSamples = [int]($CipherByteCount) / 2
 }
 
 
-if ($MaxSamples -gt $MaxAllowableSamples) {
+if ($MaxSamples -gt $MaxAllowableSamples) 
+{
     Write-Verbose ("-MaxSamples of {0} was too large. Setting to {1}, ((CipherByteArray.Count / min(keysize)) - 1." -f $MaxSamples, $MaxAllowableSamples)
     $MaxSamples = $MaxAllowableSamples
 }
@@ -630,7 +633,7 @@ for ($CalcKeySize = $MinKeySize; $CalcKeySize -le $MaxKeySize; $CalcKeySize++) {
     Write-Verbose ('$CalcKeySize is: {0}' -f $CalcKeySize)
     if ($NoUserMaxSamples) {
         # As the keysize being tried increases, the sample size decreases
-        if ($CipherByteCount % 2)
+        if ($CipherByteCountIsEven)
         {
             $MaxSamples = ([int]($CipherByteCount - 1) / $CalcKeySize)
         } 
@@ -778,7 +781,7 @@ if ($TopObjs.count -gt 1)
 }
 else 
 {
-    if ($CipherByteCount % 2)
+    if ($CipherByteCountIsEven)
     {
         $obj.'Probable Key Size' = ($CipherByteCount - 1) / 2
     }
