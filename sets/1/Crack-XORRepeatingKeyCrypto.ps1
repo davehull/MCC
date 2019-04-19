@@ -166,170 +166,178 @@ Param(
 $error.clear()
 $ErrorActionPreference = 'Stop'
 
-function GetByte {
-Param(
-    [Parameter(Mandatory=$True,Position=0)]
-        [Char]$key
-)
-    # Takes a character as input, returns the byte value
-    # Example: GetByte "A" returns 65
-    [System.Text.Encoding]::Unicode.GetBytes($key)[0]
+function GetByte 
+{
+    Param(
+        [Parameter(Mandatory=$True,Position=0)]
+            [Char]$key
+    )
+        # Takes a character as input, returns the byte value
+        # Example: GetByte "A" returns 65
+        [System.Text.Encoding]::Unicode.GetBytes($key)[0]
 }
 
-function GetBytes {
-Param(
-    [Parameter(Mandatory=$True,Position=0,ValueFromPipeLine=$True)]
-        [String]$string
-)
-    # Takes a string of characters and returns an array of bytes
-    # Example: GetBytes "ABC" returns @(65,66,67)
-    [System.Text.Encoding]::Default.GetBytes($string)
+function GetBytes 
+{
+    Param(
+        [Parameter(Mandatory=$True,Position=0,ValueFromPipeLine=$True)]
+            [String]$string
+    )
+        # Takes a string of characters and returns an array of bytes
+        # Example: GetBytes "ABC" returns @(65,66,67)
+        [System.Text.Encoding]::Default.GetBytes($string)
 }
 
-function GetBits {
-Param(
-    [Parameter(Mandatory=$True,Position=0,ValueFromPipeLine=$True)]
-        [byte]$byte
-)
-    # Takes a byte and returns a string of 1s and 0s representing the given byte
-    # Example: GetBits 65 returns 01000001
-    [System.Convert]::ToString($byte,2).PadLeft(8,'0') 
+function GetBits 
+{
+    Param(
+        [Parameter(Mandatory=$True,Position=0,ValueFromPipeLine=$True)]
+            [byte]$byte
+    )
+        # Takes a byte and returns a string of 1s and 0s representing the given byte
+        # Example: GetBits 65 returns 01000001
+        [System.Convert]::ToString($byte,2).PadLeft(8,'0') 
 }
 
 
-function GetHammingDistance {
-Param(
-    [Parameter(Mandatory=$True,Position=0)]
-        [byte[]]$ByteArray1,
-    [Parameter(Mandatory=$True,Position=1)]
-        [byte[]]$ByteArray2,
-    [Parameter(Mandatory=$True,Position=2)]
-        [hashtable]$BytePairDist
-)
-    # Calculates the Hamming Distance between two equal sized arrays of bytes
-    # Also takes a hashtable of byte pairs separated by a colon as the key and
-    # the value is their distance, this is because it's faster to lookup HDs in
-    # this table than it is to calculate them. If a given byte pair is not in 
-    # the table, the pair will be added along with their distance.
-    # Example: GetHammingDistance -ByteArray1 (GetByteArray "ABC") -ByteArray2 (GetByteArray "BAC") -BytePairDist @{}
-    # Returns: 4
-    if ($ByteArray1.Count -ne $ByteArray2.Count) {
-        Write-Error ("Hamming Distance can't be calculated because byte arrays are different lengths, {0} and {1}." -f $ByteArray1.Count, $ByteArray2.Count)
-        return $False
-    } else {
-        $Total = 0
-        for ($i = 0; $i -lt $ByteArray1.Count; $i++) {
-            $bitCount = 0
-            $pair  = $(($ByteArray1[$i],$ByteArray2[$i]) -join ":")
-            $rpair = $(($ByteArray2[$i],$ByteArray1[$i]) -join ":")
-            if ($pair -eq $rpair) { 
-                # $pair and $rpair are equivalent (10:10 -eq 10:10)
-                # Hamming Distance between identical bytes is 0
-                continue
-            } elseif ($BytePairDist.Contains($pair) -or $BytePairDist.Contains($rpair)) {
-                # Our hashtable already has the Hamming Distance for 
-                # this byte pair. Lookup the distance in the table and
-                # move on, it's faster than recalculating
-                $bitCount += $BytePairDist[$pair]
-            } else {
-                # Our hashtable doesn't contain this byte pair.
-                # Calculate the Hamming Distance 
-                $bits = (GetBits ($ByteArray1[$i] -bxor $ByteArray2[$i]))
+function GetHammingDistance 
+{
+    Param(
+        [Parameter(Mandatory=$True,Position=0)]
+            [byte[]]$ByteArray1,
+        [Parameter(Mandatory=$True,Position=1)]
+            [byte[]]$ByteArray2,
+        [Parameter(Mandatory=$True,Position=2)]
+            [hashtable]$BytePairDist
+    )
+        # Calculates the Hamming Distance between two equal sized arrays of bytes
+        # Also takes a hashtable of byte pairs separated by a colon as the key and
+        # the value is their distance, this is because it's faster to lookup HDs in
+        # this table than it is to calculate them. If a given byte pair is not in 
+        # the table, the pair will be added along with their distance.
+        # Example: GetHammingDistance -ByteArray1 (GetByteArray "ABC") -ByteArray2 (GetByteArray "BAC") -BytePairDist @{}
+        # Returns: 4
+        if ($ByteArray1.Count -ne $ByteArray2.Count) {
+            Write-Error ("Hamming Distance can't be calculated because byte arrays are different lengths, {0} and {1}." -f $ByteArray1.Count, $ByteArray2.Count)
+            return $False
+        } else {
+            $Total = 0
+            for ($i = 0; $i -lt $ByteArray1.Count; $i++) {
+                $bitCount = 0
+                $pair  = $(($ByteArray1[$i],$ByteArray2[$i]) -join ":")
+                $rpair = $(($ByteArray2[$i],$ByteArray1[$i]) -join ":")
+                if ($pair -eq $rpair) { 
+                    # $pair and $rpair are equivalent (10:10 -eq 10:10)
+                    # Hamming Distance between identical bytes is 0
+                    continue
+                } elseif ($BytePairDist.Contains($pair) -or $BytePairDist.Contains($rpair)) {
+                    # Our hashtable already has the Hamming Distance for 
+                    # this byte pair. Lookup the distance in the table and
+                    # move on, it's faster than recalculating
+                    $bitCount += $BytePairDist[$pair]
+                } else {
+                    # Our hashtable doesn't contain this byte pair.
+                    # Calculate the Hamming Distance 
+                    $bits = (GetBits ($ByteArray1[$i] -bxor $ByteArray2[$i]))
 
-                for ($j = 0; $j -lt $bits.Length; $j++) {
-                    if ($bits[$j] -eq '1') {
-                        $bitCount++
+                    for ($j = 0; $j -lt $bits.Length; $j++) {
+                        if ($bits[$j] -eq '1') {
+                            $bitCount++
+                        }
                     }
+                    # Store the byte pair and the reverse in our hashtable
+                    # along with the distance, so we can look it up next
+                    # time. Lookup is faster than recalculating.
+                    # We store the reverse too because the HD between byte
+                    # pairs AB and BA is the same as the HD between byte
+                    # pairs BA and AB
+                    $BytePairDist.Add($pair,$bitCount)
+                    $BytePairDist.Add($rpair,$bitCount)
                 }
-                # Store the byte pair and the reverse in our hashtable
-                # along with the distance, so we can look it up next
-                # time. Lookup is faster than recalculating.
-                # We store the reverse too because the HD between byte
-                # pairs AB and BA is the same as the HD between byte
-                # pairs BA and AB
-                $BytePairDist.Add($pair,$bitCount)
-                $BytePairDist.Add($rpair,$bitCount)
+                $Total += $bitCount
             }
-            $Total += $bitCount
+            Write-Verbose ('Hamming Distance of {0} and {1} is {2}' -f ($ByteArray1 -join ' '), ($ByteArray2 -join ' '), $Total)
+            $Total
         }
-        Write-Verbose ('Hamming Distance of {0} and {1} is {2}' -f ($ByteArray1 -join ' '), ($ByteArray2 -join ' '), $Total)
-        $Total
-    }
 }
 
-function ConvertBase16-ToByte {
-Param(
-    [Parameter(Mandatory=$True,Position=0)]
-        [String]$base16String
-)
-    # Converts a base16 (hexadecimal) string to a byte array
-    # Example: ConvertBase16-ToByte -base16String "101011"
-    # Returns: @(16,16,17)
-    if ($base16String -match "([^a-fA-F0-9])") {
-        Write-Error ("Input string or file does not appear to be encoded as base16. Quitting.")
-        exit
-    }
-    $byteArray = $(if ($base16String.Length -eq 1) {
-        ([System.Convert]::ToByte( $base16String, 16))
-    } elseif ($base16String.Length % 2 -eq 0) {
-        $base16String -split "([a-fA-F0-9]{2})" | ForEach-Object {
-            if ($_) {
-                $ByteInbase16 = [String]::Format("{0:D}", $_)
-                $Paddedbase16 = $ByteInbase16.PadLeft(2,"0")
-                [System.Convert]::ToByte($Paddedbase16, 16 )
+function ConvertBase16-ToByte 
+{
+    Param(
+        [Parameter(Mandatory=$True,Position=0)]
+            [String]$base16String
+    )
+        # Converts a base16 (hexadecimal) string to a byte array
+        # Example: ConvertBase16-ToByte -base16String "101011"
+        # Returns: @(16,16,17)
+        if ($base16String -match "([^a-fA-F0-9])") {
+            Write-Error ("Input string or file does not appear to be encoded as base16. Quitting.")
+            exit
+        }
+        $byteArray = $(if ($base16String.Length -eq 1) {
+            ([System.Convert]::ToByte( $base16String, 16))
+        } elseif ($base16String.Length % 2 -eq 0) {
+            $base16String -split "([a-fA-F0-9]{2})" | ForEach-Object {
+                if ($_) {
+                    $ByteInbase16 = [String]::Format("{0:D}", $_)
+                    $Paddedbase16 = $ByteInbase16.PadLeft(2,"0")
+                    [System.Convert]::ToByte($Paddedbase16, 16 )
+                }
             }
+        })
+        $byteArray
+}
+
+function ConvertBase64-ToByte 
+{
+    Param(
+        [Parameter(Mandatory=$True,Position=0)]
+            [String]$base64String
+    )
+        # Takes a Base64 encoded string and returns a byte array
+        # Example: ConvertBase64-ToByte -base64String "AAAB"
+        # Returns: @(0,0,1)
+        Try {
+            $Error.Clear()
+            [System.Convert]::FromBase64String($base64String)
+        } Catch {
+            Write-Error ("Input string or file does not match Base64 encoding. Quitting.")
+            exit
         }
-    })
-    $byteArray
 }
 
-function ConvertBase64-ToByte {
-Param(
-    [Parameter(Mandatory=$True,Position=0)]
-        [String]$base64String
-)
-    # Takes a Base64 encoded string and returns a byte array
-    # Example: ConvertBase64-ToByte -base64String "AAAB"
-    # Returns: @(0,0,1)
-    Try {
-        $Error.Clear()
-        [System.Convert]::FromBase64String($base64String)
-    } Catch {
-        Write-Error ("Input string or file does not match Base64 encoding. Quitting.")
-        exit
-    }
+function GetGreatestCommonDenominator 
+{
+    Param (
+        [Parameter(Mandatory=$True,Position=0)]
+            [int]$val1,
+        [Parameter(Mandatory=$True,Position=1)]
+            [int]$val2
+    )
+        # We shouldn't have any negative values for Hamming
+        # Distances, but this is a generalized algorithm
+        # Returns the GCD for the values 1 and 2
+        $val1,$val2 = ($val1,$val2 | ForEach-Object {
+            [math]::Abs($_)
+        })
+
+        if ($val2 -eq 0) {
+            $val1
+        } else {
+            GetGreatestCommonDenominator -val1 $val2 -val2 ($val1 % $val2)
+        }        
 }
 
-function GetGreatestCommonDenominator {
-Param (
-    [Parameter(Mandatory=$True,Position=0)]
-        [int]$val1,
-    [Parameter(Mandatory=$True,Position=1)]
-        [int]$val2
-)
-    # We shouldn't have any negative values for Hamming
-    # Distances, but this is a generalized algorithm
-    # Returns the GCD for the values 1 and 2
-    $val1,$val2 = ($val1,$val2 | ForEach-Object {
-        [math]::Abs($_)
-    })
-
-    if ($val2 -eq 0) {
-        $val1
-    } else {
-        GetGreatestCommonDenominator -val1 $val2 -val2 ($val1 % $val2)
-    }        
-}
-
-function GetTransposedBlock {
-Param(
-    [Parameter(Mandatory=$True,Position=0)]
-        [int]$KeySize,
-    [Parameter(Mandatory=$True,Position=1)]
-        [Array]$CipherByteArray,
-    [Parameter(Mandatory=$True,Position=2)]
-        [int]$KeyPosition
-)
+function GetTransposedBlock 
+{
+    Param(
+        [Parameter(Mandatory=$True,Position=0)]
+            [int]$KeySize,
+        [Parameter(Mandatory=$True,Position=1)]
+            [Array]$CipherByteArray,
+        [Parameter(Mandatory=$True,Position=2)]
+            [int]$KeyPosition
+    )
     # This function returns an array of every byte at $KeySize offsets
     # beginning at $KeyPosition. If $KeySize is 4 and $KeyPosition is
     # 0, it returns an array of bytes 0, 4, 8, 12... 
@@ -352,11 +360,12 @@ Param(
     $BlockArray
 }
 
-function Score-LetterFrequency {
-Param(
-    [Parameter(Mandatory=$True,Position=0)]
-        [String]$DecodedString
-)
+function Score-LetterFrequency 
+{
+    Param(
+        [Parameter(Mandatory=$True,Position=0)]
+            [String]$DecodedString
+    )
     $Score = 0
     $DecodedUpper = $DecodedString.ToUpper()
 
@@ -459,13 +468,14 @@ Param(
     $Score
 }
 
-function GetEnglishScore {
-Param(
-    [Parameter(Mandatory=$True,Position=0)]
-        [byte[]]$xordbytes,
-    [Parameter(ParameterSetName='unknownKey')]
-        [Char]$keyChar
-)
+function GetEnglishScore 
+{
+    Param(
+        [Parameter(Mandatory=$True,Position=0)]
+            [byte[]]$xordbytes,
+        [Parameter(ParameterSetName='unknownKey')]
+            [Char]$keyChar
+    )
     # Returns a PowerShell object with the key and the score of the
     # letter frequency according to English letter frequencies
     $obj = "" | Select-Object Key,LetterFreqScore
@@ -485,7 +495,8 @@ Param(
     $obj | Select-Object Key,LetterFreqScore
 }
 
-function GetEncoding {
+function GetEncoding 
+{
     Param(
         [Parameter(Mandatory=$True,Position=0)]
             [string]$ProtectedString
