@@ -503,48 +503,68 @@ function GetEncoding {
     }
 }
 
-# All functions defined, let's get to work
-# Create a byte array for our ciphertext
-[byte[]]$CipherByteArray
-
-# Were we called with -String, -File, -base16 or -base64
-switch ($PSCmdlet.ParameterSetName) 
+function Get-CipherByteArray
 {
-    'String' 
+    Param(
+        [parameter(Mandatory=$True,Position=0)]
+            [string]$ParameterSetName,
+        [parameter(Mandatory=$False,Position=1)]
+            [string]$ProtectedString,
+        [parameter(Mandatory=$False,Position=2)]
+            [String]$ProtectedFile,
+        [parameter(Mandatory=$False,Position=3)]
+            [string]$Encoding
+    )
+
+    # Were we called with -String, -File, -base16 or -base64
+    switch ($ParameterSetName) 
     {
-        # Nothnig to do for string
-    }
-    'File' 
-    {
-        if ($Path = Resolve-Path $File) 
+        'String' 
         {
-            # Read file into $String
-            $File = ls $Path
-            $String = ([System.IO.File]::ReadAllText($File)) -join ''
+            # Nothnig to do for string
+            break
+        }
+        'File' 
+        {
+            if ($Path = Resolve-Path $File) 
+            {
+                # Read file into $String
+                $File = ls $Path
+                $String = ([System.IO.File]::ReadAllText($File)) -join ''
+            }
+            break
+        }
+        Default {
+            # We should never get here because the parameter set doesn't match the script's signature
+            Write-Error ('No -File or -String argument provided. Nothing to do. Run Get-Help {0} for assistance on usage.' -f $MyInvocation.MyCommand.Name)
+            Exit
         }
     }
-    Default {
-        Write-Error ('No -File or -String argument provided. Nothing to do. Run Get-Help {0} for assistance on usage.' -f $MyInvocation.MyCommand.Name)
-        Exit
+
+    if (-not ($Encoding -match 'base16|base64'))
+    {
+        $Encoding = GetEncoding $String
+    }
+
+    switch ($Encoding)
+    {
+        'base16'
+        {
+            ConvertBase16-ToByte -base16String $String
+            break
+        }
+        'base64'
+        {
+            ConvertBase64-ToByte -base64String $String
+            break
+        }
     }
 }
 
-if (-not ($Encoding -match 'base16|base64'))
-{
-    $Encoding = GetEncoding $String
-}
 
-switch ($Encoding)
-{
-    'base16'
-    {
-        $CipherByteArray = ConvertBase16-ToByte -base16String $String
-    }
-    'base64'
-    {
-        $CipherByteArray = ConvertBase64-ToByte -base64String $String
-    }
-}
+# All functions defined, let's get to work
+# Create a byte array for our ciphertext
+[byte[]]$CipherByteArray = Get-CipherByteArray -ParameterSetname $PSCmdlet.ParameterSetName -ProtectedString $String -ProtectedFile $File -Encoding $Encoding
 
 if (-not($MaxSamples)) {
     # User didn't specificy a -MaxSamples value We'll set one later,
