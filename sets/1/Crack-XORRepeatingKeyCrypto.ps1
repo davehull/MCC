@@ -590,7 +590,8 @@ $CipherByteCount = $CipherByteArray.Count
 if ($CipherByteCount % 2)
 {
     $MaxAllowableKeySize = $MaxAllowableSamples = [int]($CipherByteCount - 1) / 2
-} else 
+} 
+else 
 {
     $MaxAllowableKeySize = $MaxAllowableSamples = [int]($CipherByteCount) / 2
 }
@@ -600,13 +601,17 @@ if ($MaxSamples -gt $MaxAllowableSamples) {
     Write-Verbose ("-MaxSamples of {0} was too large. Setting to {1}, ((CipherByteArray.Count / min(keysize)) - 1." -f $MaxSamples, $MaxAllowableSamples)
     $MaxSamples = $MaxAllowableSamples
 }
+
 if ($MinKeySize -eq $False) {
 	$MinKeySize = 2
 }
+
 if ($MaxKeySize -eq $False) {
     Write-Verbose ("No MaxKeySize value provided, defaulting to half the input size. Depending on the input size, this could take some time.")
     $MaxKeySize = $MaxAllowableKeySize
-} elseif ($MaxKeySize -gt $MaxAllowableKeySize) {
+} 
+elseif ($MaxKeySize -gt $MaxAllowableKeySize) 
+{
     Write-Verbose ("-MaxKeySize of {0} exceeds the length of the ciphertext. Setting to {1}, half the size of the ciphertext." -f $MaxKeySize, $MaxAllowableKeySize)
     $MaxKeySize = $MaxAllowableKeySize
 }
@@ -614,7 +619,7 @@ if ($MaxKeySize -eq $False) {
 $objs = @()  # this will be an array of objects
 $BytePairDist = @{}  # a hashtable of Hamming Distances of byte pairs
 
-# Now we're getting down to business. We're going to try calculate
+# Now we're getting down to business. We're going to calculate
 # Hamming Distances for pairs of bytes from two bytes in length up to
 # MaxKeySize. But what if the key size is one byte? If that's the case
 # use XOR-Decrypt.ps1 for single-byte repeating XOR key crypto, it's
@@ -628,14 +633,16 @@ for ($CalcKeySize = $MinKeySize; $CalcKeySize -le $MaxKeySize; $CalcKeySize++) {
         if ($CipherByteCount % 2)
         {
             $MaxSamples = ([int]($CipherByteCount - 1) / $CalcKeySize)
-        } else 
+        } 
+        else 
         {
             $MaxSamples = ([int]($CipherByteCount) / $CalcKeySize)    
         }        
     }
     Write-Verbose ('$MaxSamples: {0}' -f $MaxSamples)
 
-    for ($i = 0; $i -lt $MaxSamples; $i++) {
+    for ($i = 0; $i -lt $MaxSamples; $i++) 
+    {
         # Build a pair of byte arrays based on our keysize
         $Start = (($CalcKeySize - 1) * $i) + $i
         $End   = (($CalcKeySize - 1) * ($i + 1) + $i)
@@ -645,12 +652,14 @@ for ($CalcKeySize = $MinKeySize; $CalcKeySize -le $MaxKeySize; $CalcKeySize++) {
         $ByteArray2 = $CipherByteArray[$Start..$End]
 
         # Calculate the Hamming Distance of the two byte arrays
-        if ($ByteArray1.Count -eq $ByteArray2.Count) {
+        if ($ByteArray1.Count -eq $ByteArray2.Count) 
+        {
             $HDs += (GetHammingDistance $ByteArray1 $ByteArray2 $BytePairDist)
         }
     }
 
-    if ($HDs) {
+    if ($HDs) 
+    {
         # Store the results in an object, then we'll add that object to
         # our array of objects
         $AvgHD = ($HDs | Measure-Object -Average | Select-Object -ExpandProperty Average)
@@ -695,14 +704,18 @@ $obj = "" | Select-Object 'Probable Key Size',"Top ${top} KeySizes","Top ${top} 
 Write-Verbose ('$TopObjs.count is {0}' -f $TopObjs.count)
 if ($TopObjs.count -gt 1) 
 {
-    for ($p = 0; $p -lt $TopObjs.Count; $p++) {
-        for ($q = $p + 1; $q -lt $TopObjs.Count; $q++) {
-
+    for ($p = 0; $p -lt $TopObjs.Count; $p++) 
+    {
+        for ($q = $p + 1; $q -lt $TopObjs.Count; $q++) 
+        {
             $gcd = GetGreatestCommonDenominator -val1 $TopObjs[$p].CalcKeySize -val2 $TopObjs[$q].CalcKeySize
-            if ($GCDs.Contains($gcd)) {
+            if ($GCDs.Contains($gcd)) 
+            {
                 # We've seen this GCD before, increment its count
                 $GCDs.set_item($gcd, $GCDs[$gcd] + 1)
-            } else {
+            } 
+            else 
+            {
                 # We've not seen this GCD before, add it to out table
                 $GCDs.Add($gcd, 1)
             }
@@ -716,9 +729,12 @@ if ($TopObjs.count -gt 1)
         Write-Verbose ('$MostFreqGCD is {0}' -f $MostFreqGCD)
 
         if (($TopObjs[0..($TopObjs.Count - 1)].CalcKeySize).Contains($MostFreqGCD) -and `
-            ($TopObjs | ? { $_.CalcKeySize -eq $MostFreqGCD -and $_.NAvgHD -lt $MaxNAvgHD})) {
+            ($TopObjs | ? { $_.CalcKeySize -eq $MostFreqGCD -and $_.NAvgHD -lt $MaxNAvgHD})) 
+        {
                 $ProbableKeySize = $MostFreqGCD
-        } else {
+        } 
+        else 
+        {
             # $MostFreqGCD was not in the top n calculated key sizes
             # Set $ProbableKeySize1 to the smaller of the first two
             # calculated key sizes
@@ -731,16 +747,22 @@ if ($TopObjs.count -gt 1)
             $ProbableKeySize2 = $TopObjs | ? { $_.NAvgHD -eq $MinNAvgHD } | Select-Object -ExpandProperty CalcKeySize
             
 
-            if ($ProbableKeySize1 -eq $ProbableKeySize2) {
+            if ($ProbableKeySize1 -eq $ProbableKeySize2) 
+            {
                 # The smallest calculated key size also has the smallest
                 # NAvgHD and so is probably our key size
                 $ProbableKeySize = $ProbableKeySize1
-            } else {
-                if ($TopObjs | ? { $_.CalcKeySize -eq $ProbableKeySize1 -and $_.NAvgHD -lt $MaxNAvgHD } ) {
+            } 
+            else 
+            {
+                if ($TopObjs | ? { $_.CalcKeySize -eq $ProbableKeySize1 -and $_.NAvgHD -lt $MaxNAvgHD } ) 
+                {
                     # Hm, if $ProbableKeySize1 has a NAvgHD below the max
                     # allowed NAvgHD, let's take it as our key size
                     $ProbableKeySize = $ProbableKeySize1
-                } else {
+                } 
+                else 
+                {
                     # Well, maybe the right key size is the one with the
                     # smallest NAvgHD
                     $ProbableKeySize = $ProbableKeySize2
@@ -771,7 +793,8 @@ else
 $ProbableKey = @()
 
 # Try and figure out what the byte is for each position in our key
-for ($a = 0; $a -lt $obj.'Probable Key Size'; $a++) {
+for ($a = 0; $a -lt $obj.'Probable Key Size'; $a++) 
+{
     $ProbableKey += ""
     $HighScoreObj = $null
     Write-Verbose ('Brute forcing key byte position {0} of {1}' -f ($a + 1), $obj.'Probable Key Size')
@@ -788,7 +811,8 @@ for ($a = 0; $a -lt $obj.'Probable Key Size'; $a++) {
     if ($includeNonPrintable) 
     {
         $keyspace = [char[]](1..255) -join ''
-    } else 
+    } 
+    else 
     {
         $keyspace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~``!@#$%^&*()_-+={}[]\|:;`"'<>,.?/ "
     }  
@@ -796,11 +820,13 @@ for ($a = 0; $a -lt $obj.'Probable Key Size'; $a++) {
     # Iterate through each byte of our keyspace, xoring each byte of
     # our transposed byte arrays and store the result in a new byte 
     # array, $xordBytes
-    for ($j = 0; $j -lt $keyspace.Length; $j++) {
+    for ($j = 0; $j -lt $keyspace.Length; $j++) 
+    {
         $keyByte = GetByte $keyspace[$j]
         # Write-Verbose ('$keyByte is {0}' -f $keyByte)
         $xordBytes = $(
-            for ($i = 0; $i -lt $TransposedByteArray.Count; $i++) {
+            for ($i = 0; $i -lt $TransposedByteArray.Count; $i++) 
+            {
                 if ($PreserveNull) 
                 {
                     if ($TransposedByteArray[$i] -ne 0 -And $TransposedByteArray[$i] -ne $keyByte)
@@ -820,15 +846,19 @@ for ($a = 0; $a -lt $obj.'Probable Key Size'; $a++) {
         $brutedObj = GetEnglishScore -xordbytes $xordBytes -keyChar $keyspace[$j]
         # Write-Verbose ('English score is {0}' -f $brutedObj.LetterFreqScore)
 
-        if ($HighScoreObj -eq $null) {
+        if ($HighScoreObj -eq $null) 
+        {
             # First run, no $HighScoreObj
             $HighScoreObj = $brutedObj.PSObject.Copy()
             Write-Verbose ('New English high score of {0} using byte value {1}' -f $HighScoreObj.LetterFreqScore, $keyByte)
-        } else {
+        }
+        else 
+        {
             # The English letter frequency score was higher for this
             # key byte, update the $HighScoreObj and store the new
             # ProbableKey for this byte position of the key
-            if ([int]$brutedObj.LetterFreqScore -gt [int]$HighScoreObj.LetterFreqScore) {
+            if ([int]$brutedObj.LetterFreqScore -gt [int]$HighScoreObj.LetterFreqScore) 
+            {
                 $HighScoreObj = $brutedObj.PSObject.Copy()
                 $ProbableKey[$a] = $keyspace[$j]
                 Write-Verbose ('New English high score of {0} using byte value {1}' -f $HighScoreObj.LetterFreqScore, $keyByte)
@@ -843,12 +873,15 @@ $keybytes = GetBytes ($ProbableKey -join "")
 # Now we're going to take our array of probable key bytes and xor the
 # original $CipherByteArray against that array
 $xordBytes  = $(
-    for ($i = 0; $i -lt $CipherByteCount) {
-        for ($j = 0; $j -lt $keyBytes.Length; $j++) {
+    for ($i = 0; $i -lt $CipherByteCount) 
+    {
+        for ($j = 0; $j -lt $keyBytes.Length; $j++) 
+        {
             # We'll repeat the key until we reach ciphertext's end
             $CipherByteArray[$i] -bxor $keybytes[$j]
             $i++
-            if ($i -ge $CipherByteCount) {
+            if ($i -ge $CipherByteCount) 
+            {
                 # We've reached the end of the ciphertext, exit loop
                 $j = $keyBytes.Length
             }
@@ -859,14 +892,16 @@ $xordBytes  = $(
 
 # Convert the decrypted bytes to a string
 $DecryptedString = $(
-    foreach($byte in $xordBytes) {
+    foreach($byte in $xordBytes) 
+    {
         [Char]$byte
     }
 ) -join ''
 
 # Build an object to return to the user
 $ProbableKeyBytes = @()
-foreach($char in $ProbableKey) {
+foreach($char in $ProbableKey) 
+{
     # Write-Verbose ('$char is {0}' -f [byte][char]$char)
     if ($char)
     {
