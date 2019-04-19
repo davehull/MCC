@@ -577,7 +577,8 @@ function Get-CipherByteArray
 # Create a byte array for our ciphertext
 [byte[]]$CipherByteArray = Get-CipherByteArray -ParameterSetname $PSCmdlet.ParameterSetName -ProtectedString $String -ProtectedFile $File -Encoding $Encoding
 
-if (-not($MaxSamples)) {
+if (-not($MaxSamples)) 
+{
     # User didn't specificy a -MaxSamples value We'll set one later,
     # but we'll also need to know that the user didn't set one
     $NoUserMaxSamples = $True
@@ -589,12 +590,12 @@ $CipherByteCount = $CipherByteArray.Count
 # For repeating key XOR, max can't exceed half the CipherByteCount
 if ($CipherByteCount % 2)
 {
-    $CipherByteCountIsEven = $False
+    $CipherByteCountIsOdd = $True
     $MaxAllowableKeySize = $MaxAllowableSamples = [int]($CipherByteCount - 1) / 2
 } 
 else 
 {
-    $CipherByteCountIsEven = $True
+    $CipherByteCountIsOdd = $True
     $MaxAllowableKeySize = $MaxAllowableSamples = [int]($CipherByteCount) / 2
 }
 
@@ -605,11 +606,13 @@ if ($MaxSamples -gt $MaxAllowableSamples)
     $MaxSamples = $MaxAllowableSamples
 }
 
-if ($MinKeySize -eq $False) {
+if ($MinKeySize -eq $False) 
+{
 	$MinKeySize = 2
 }
 
-if ($MaxKeySize -eq $False) {
+if ($MaxKeySize -eq $False) 
+{
     Write-Verbose ("No MaxKeySize value provided, defaulting to half the input size. Depending on the input size, this could take some time.")
     $MaxKeySize = $MaxAllowableKeySize
 } 
@@ -627,13 +630,15 @@ $BytePairDist = @{}  # a hashtable of Hamming Distances of byte pairs
 # MaxKeySize. But what if the key size is one byte? If that's the case
 # use XOR-Decrypt.ps1 for single-byte repeating XOR key crypto, it's
 # faster and far more accurate.
-for ($CalcKeySize = $MinKeySize; $CalcKeySize -le $MaxKeySize; $CalcKeySize++) {
+for ($CalcKeySize = $MinKeySize; $CalcKeySize -le $MaxKeySize; $CalcKeySize++) 
+{
     $HDs = @()  # An array of Hamming Distances
 
     Write-Verbose ('$CalcKeySize is: {0}' -f $CalcKeySize)
-    if ($NoUserMaxSamples) {
+    if ($NoUserMaxSamples) 
+    {
         # As the keysize being tried increases, the sample size decreases
-        if ($CipherByteCountIsEven)
+        if ($CipherByteCountIsOdd)
         {
             $MaxSamples = ([int]($CipherByteCount - 1) / $CalcKeySize)
         } 
@@ -781,7 +786,7 @@ if ($TopObjs.count -gt 1)
 }
 else 
 {
-    if ($CipherByteCountIsEven)
+    if ($CipherByteCountIsOdd)
     {
         $obj.'Probable Key Size' = ($CipherByteCount - 1) / 2
     }
