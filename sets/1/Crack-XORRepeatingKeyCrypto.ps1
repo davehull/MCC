@@ -210,55 +210,65 @@ function GetHammingDistance
         [Parameter(Mandatory=$True,Position=2)]
             [hashtable]$BytePairDist
     )
-        # Calculates the Hamming Distance between two equal sized arrays of bytes
-        # Also takes a hashtable of byte pairs separated by a colon as the key and
-        # the value is their distance, this is because it's faster to lookup HDs in
-        # this table than it is to calculate them. If a given byte pair is not in 
-        # the table, the pair will be added along with their distance.
-        # Example: GetHammingDistance -ByteArray1 (GetByteArray "ABC") -ByteArray2 (GetByteArray "BAC") -BytePairDist @{}
-        # Returns: 4
-        if ($ByteArray1.Count -ne $ByteArray2.Count) {
-            Write-Error ("Hamming Distance can't be calculated because byte arrays are different lengths, {0} and {1}." -f $ByteArray1.Count, $ByteArray2.Count)
-            return $False
-        } else {
-            $Total = 0
-            for ($i = 0; $i -lt $ByteArray1.Count; $i++) {
-                $bitCount = 0
-                $pair  = $(($ByteArray1[$i],$ByteArray2[$i]) -join ":")
-                $rpair = $(($ByteArray2[$i],$ByteArray1[$i]) -join ":")
-                if ($pair -eq $rpair) { 
-                    # $pair and $rpair are equivalent (10:10 -eq 10:10)
-                    # Hamming Distance between identical bytes is 0
-                    continue
-                } elseif ($BytePairDist.Contains($pair) -or $BytePairDist.Contains($rpair)) {
-                    # Our hashtable already has the Hamming Distance for 
-                    # this byte pair. Lookup the distance in the table and
-                    # move on, it's faster than recalculating
-                    $bitCount += $BytePairDist[$pair]
-                } else {
-                    # Our hashtable doesn't contain this byte pair.
-                    # Calculate the Hamming Distance 
-                    $bits = (GetBits ($ByteArray1[$i] -bxor $ByteArray2[$i]))
+    # Calculates the Hamming Distance between two equal sized arrays of bytes
+    # Also takes a hashtable of byte pairs separated by a colon as the key and
+    # the value is their distance, this is because it's faster to lookup HDs in
+    # this table than it is to calculate them. If a given byte pair is not in 
+    # the table, the pair will be added along with their distance.
+    # Example: GetHammingDistance -ByteArray1 (GetByteArray "ABC") -ByteArray2 (GetByteArray "BAC") -BytePairDist @{}
+    # Returns: 4
+    if ($ByteArray1.Count -ne $ByteArray2.Count) 
+    {
+        Write-Error ("Hamming Distance can't be calculated because byte arrays are different lengths, {0} and {1}." -f $ByteArray1.Count, $ByteArray2.Count)
+        return $False
+    } 
+    else 
+    {
+        $Total = 0
+        for ($i = 0; $i -lt $ByteArray1.Count; $i++) {
+            $bitCount = 0
+            $pair  = $(($ByteArray1[$i],$ByteArray2[$i]) -join ":")
+            $rpair = $(($ByteArray2[$i],$ByteArray1[$i]) -join ":")
+            if ($pair -eq $rpair) 
+            { 
+                # $pair and $rpair are equivalent (10:10 -eq 10:10)
+                # Hamming Distance between identical bytes is 0
+                continue
+            } 
+            elseif ($BytePairDist.Contains($pair) -or $BytePairDist.Contains($rpair)) 
+            {
+                # Our hashtable already has the Hamming Distance for 
+                # this byte pair. Lookup the distance in the table and
+                # move on, it's faster than recalculating
+                $bitCount += $BytePairDist[$pair]
+            } 
+            else 
+            {
+                # Our hashtable doesn't contain this byte pair.
+                # Calculate the Hamming Distance 
+                $bits = (GetBits ($ByteArray1[$i] -bxor $ByteArray2[$i]))
 
-                    for ($j = 0; $j -lt $bits.Length; $j++) {
-                        if ($bits[$j] -eq '1') {
-                            $bitCount++
-                        }
+                for ($j = 0; $j -lt $bits.Length; $j++) 
+                {
+                    if ($bits[$j] -eq '1') 
+                    {
+                        $bitCount++
                     }
-                    # Store the byte pair and the reverse in our hashtable
-                    # along with the distance, so we can look it up next
-                    # time. Lookup is faster than recalculating.
-                    # We store the reverse too because the HD between byte
-                    # pairs AB and BA is the same as the HD between byte
-                    # pairs BA and AB
-                    $BytePairDist.Add($pair,$bitCount)
-                    $BytePairDist.Add($rpair,$bitCount)
                 }
-                $Total += $bitCount
+                # Store the byte pair and the reverse in our hashtable
+                # along with the distance, so we can look it up next
+                # time. Lookup is faster than recalculating.
+                # We store the reverse too because the HD between byte
+                # pairs AB and BA is the same as the HD between byte
+                # pairs BA and AB
+                $BytePairDist.Add($pair,$bitCount)
+                $BytePairDist.Add($rpair,$bitCount)
             }
-            Write-Verbose ('Hamming Distance of {0} and {1} is {2}' -f ($ByteArray1 -join ' '), ($ByteArray2 -join ' '), $Total)
-            $Total
+            $Total += $bitCount
         }
+        # Write-Verbose ('Hamming Distance of {0} and {1} is {2}' -f ($ByteArray1 -join ' '), ($ByteArray2 -join ' '), $Total)
+        $Total
+    }
 }
 
 function ConvertBase16-ToByte 
@@ -573,117 +583,134 @@ function Get-CipherByteArray
 }
 
 
+function GetNormalizedAverageHammingDistances {
+    Param(
+        [parameter(Mandatory=$True,Position=0)]
+            [int]$MaxSamples,
+        [parameter(Mandatory=$True,Position=1)]
+            [byte[]]$CipherByteArray,
+        [parameter(Mandatory=$True,Position=2)]
+            $MinKeySize,
+        [parameter(Mandatory=$True,Position=3)]
+            $MaxKeySize
+    )
+    if (-not($MaxSamples)) 
+    {
+        # User didn't specificy a -MaxSamples value We'll set one later,
+        # but we'll also need to know that the user didn't set one
+        $NoUserMaxSamples = $True
+    }
+
+    # Get our count once, we're going to need it multiple places
+    $CipherByteCount = $CipherByteArray.Count
+
+    # For repeating key XOR, max can't exceed half the CipherByteCount
+    if ($CipherByteCount % 2)
+    {
+        $CipherByteCountIsOdd = $True
+        $MaxAllowableKeySize = $MaxAllowableSamples = [int]($CipherByteCount - 1) / 2
+    } 
+    else 
+    {
+        $CipherByteCountIsOdd = $True
+        $MaxAllowableKeySize = $MaxAllowableSamples = [int]($CipherByteCount) / 2
+    }
+
+
+    if ($MaxSamples -gt $MaxAllowableSamples) 
+    {
+        Write-Verbose ("-MaxSamples of {0} was too large. Setting to {1}, ((CipherByteArray.Count / min(keysize)) - 1." -f $MaxSamples, $MaxAllowableSamples)
+        $MaxSamples = $MaxAllowableSamples
+    }
+
+    if ($MinKeySize -eq $False) 
+    {
+        $MinKeySize = 2
+    }
+
+    if ($MaxKeySize -eq $False) 
+    {
+        Write-Verbose ("No MaxKeySize value provided, defaulting to half the input size. Depending on the input size, this could take some time.")
+        $MaxKeySize = $MaxAllowableKeySize
+    } 
+    elseif ($MaxKeySize -gt $MaxAllowableKeySize) 
+    {
+        Write-Verbose ("-MaxKeySize of {0} exceeds the length of the ciphertext. Setting to {1}, half the size of the ciphertext." -f $MaxKeySize, $MaxAllowableKeySize)
+        $MaxKeySize = $MaxAllowableKeySize
+    }
+
+    $objs = @()  # this will be an array of objects
+    $BytePairDist = @{}  # a hashtable of Hamming Distances of byte pairs
+
+    # Now we're getting down to business. We're going to calculate
+    # Hamming Distances for pairs of bytes from two bytes in length up to
+    # MaxKeySize. But what if the key size is one byte? If that's the case
+    # use XOR-Decrypt.ps1 for single-byte repeating XOR key crypto, it's
+    # faster and far more accurate.
+    for ($CalcKeySize = $MinKeySize; $CalcKeySize -le $MaxKeySize; $CalcKeySize++) 
+    {
+        $HDs = @()  # An array of Hamming Distances
+
+        Write-Verbose ('CalcKeySize is: {0}' -f $CalcKeySize)
+        if ($NoUserMaxSamples) 
+        {
+            # As the keysize being tried increases, the sample size decreases
+            if ($CipherByteCountIsOdd)
+            {
+                $MaxSamples = ([int]($CipherByteCount - 1) / $CalcKeySize)
+            } 
+            else 
+            {
+                $MaxSamples = ([int]($CipherByteCount) / $CalcKeySize)    
+            }        
+        }
+        Write-Verbose ('MaxSamples: {0}' -f $MaxSamples)
+
+        for ($i = 0; $i -lt $MaxSamples; $i++) 
+        {
+            # Build a pair of byte arrays based on our keysize
+            $Start = (($CalcKeySize - 1) * $i) + $i
+            $End   = (($CalcKeySize - 1) * ($i + 1) + $i)
+            # Write-Verbose ('$ByteArray1 $Start is {0}. $End is {1}' -f $Start, $End)
+            $ByteArray1 = $CipherByteArray[$Start..$End]
+            $Start = $End + 1
+            $End   = (($CalcKeySize - 1) * ($i + 2) + 1) + $i
+            # Write-Verbose ('$ByteArray2 $Start is {0}. $End is {1}' -f $Start, $End)
+            $ByteArray2 = $CipherByteArray[$Start..$End]
+
+            # Calculate the Hamming Distance of the two byte arrays
+            if ($ByteArray1.Count -eq $ByteArray2.Count) 
+            {
+                $HDs += (GetHammingDistance $ByteArray1 $ByteArray2 $BytePairDist)
+            }
+        }
+
+        if ($HDs) 
+        {
+            # Store the results in an object, then we'll add that object to
+            # our array of objects
+            $AvgHD = ($HDs | Measure-Object -Average | Select-Object -ExpandProperty Average)
+            # Write-Verbose ('AvgHD: {0}' -f $AvgHD)
+            $NAvgHD = $AvgHD / $CalcKeySize
+            Write-Verbose ('Normalized AvgHD: {0}' -f $NAvgHD)
+            $obj = "" | Select-Object CalcKeySize,NAvgHD
+            $obj.CalcKeySize = $CalcKeySize
+            $obj.NAvgHD = $NAvgHD
+            $objs += $obj
+        }
+    }
+    $objs, $CipherByteCount, $CipherByteCountIsOdd
+}
+
+
 # All functions defined, let's get to work
 # Create a byte array for our ciphertext
 [byte[]]$CipherByteArray = Get-CipherByteArray -ParameterSetname $PSCmdlet.ParameterSetName -ProtectedString $String -ProtectedFile $File -Encoding $Encoding
 
-if (-not($MaxSamples)) 
-{
-    # User didn't specificy a -MaxSamples value We'll set one later,
-    # but we'll also need to know that the user didn't set one
-    $NoUserMaxSamples = $True
-}
+$objs, $CipherByteCount, $CipherByteCountIsOdd = GetNormalizedAverageHammingDistances -MaxSamples $MaxSamples -CipherByteArray $CipherByteArray -MinKeySize $MinKeySize -MaxKeySize $MaxKeySize
 
-# Get our count once, we're going to need it multiple places
-$CipherByteCount = $CipherByteArray.Count
-
-# For repeating key XOR, max can't exceed half the CipherByteCount
-if ($CipherByteCount % 2)
-{
-    $CipherByteCountIsOdd = $True
-    $MaxAllowableKeySize = $MaxAllowableSamples = [int]($CipherByteCount - 1) / 2
-} 
-else 
-{
-    $CipherByteCountIsOdd = $True
-    $MaxAllowableKeySize = $MaxAllowableSamples = [int]($CipherByteCount) / 2
-}
-
-
-if ($MaxSamples -gt $MaxAllowableSamples) 
-{
-    Write-Verbose ("-MaxSamples of {0} was too large. Setting to {1}, ((CipherByteArray.Count / min(keysize)) - 1." -f $MaxSamples, $MaxAllowableSamples)
-    $MaxSamples = $MaxAllowableSamples
-}
-
-if ($MinKeySize -eq $False) 
-{
-	$MinKeySize = 2
-}
-
-if ($MaxKeySize -eq $False) 
-{
-    Write-Verbose ("No MaxKeySize value provided, defaulting to half the input size. Depending on the input size, this could take some time.")
-    $MaxKeySize = $MaxAllowableKeySize
-} 
-elseif ($MaxKeySize -gt $MaxAllowableKeySize) 
-{
-    Write-Verbose ("-MaxKeySize of {0} exceeds the length of the ciphertext. Setting to {1}, half the size of the ciphertext." -f $MaxKeySize, $MaxAllowableKeySize)
-    $MaxKeySize = $MaxAllowableKeySize
-}
-
-$objs = @()  # this will be an array of objects
-$BytePairDist = @{}  # a hashtable of Hamming Distances of byte pairs
-
-# Now we're getting down to business. We're going to calculate
-# Hamming Distances for pairs of bytes from two bytes in length up to
-# MaxKeySize. But what if the key size is one byte? If that's the case
-# use XOR-Decrypt.ps1 for single-byte repeating XOR key crypto, it's
-# faster and far more accurate.
-for ($CalcKeySize = $MinKeySize; $CalcKeySize -le $MaxKeySize; $CalcKeySize++) 
-{
-    $HDs = @()  # An array of Hamming Distances
-
-    Write-Verbose ('$CalcKeySize is: {0}' -f $CalcKeySize)
-    if ($NoUserMaxSamples) 
-    {
-        # As the keysize being tried increases, the sample size decreases
-        if ($CipherByteCountIsOdd)
-        {
-            $MaxSamples = ([int]($CipherByteCount - 1) / $CalcKeySize)
-        } 
-        else 
-        {
-            $MaxSamples = ([int]($CipherByteCount) / $CalcKeySize)    
-        }        
-    }
-    Write-Verbose ('$MaxSamples: {0}' -f $MaxSamples)
-
-    for ($i = 0; $i -lt $MaxSamples; $i++) 
-    {
-        # Build a pair of byte arrays based on our keysize
-        $Start = (($CalcKeySize - 1) * $i) + $i
-        $End   = (($CalcKeySize - 1) * ($i + 1) + $i)
-        $ByteArray1 = $CipherByteArray[$Start..$End]
-        $Start = $End + 1
-        $End   = (($CalcKeySize - 1) * ($i + 2) + 1) + $i
-        $ByteArray2 = $CipherByteArray[$Start..$End]
-
-        # Calculate the Hamming Distance of the two byte arrays
-        if ($ByteArray1.Count -eq $ByteArray2.Count) 
-        {
-            $HDs += (GetHammingDistance $ByteArray1 $ByteArray2 $BytePairDist)
-        }
-    }
-
-    if ($HDs) 
-    {
-        # Store the results in an object, then we'll add that object to
-        # our array of objects
-        $AvgHD = ($HDs | Measure-Object -Average | Select-Object -ExpandProperty Average)
-        Write-Verbose ('$AvgHD: {0}' -f $AvgHD)
-        $NAvgHD = $AvgHD / $CalcKeySize
-        Write-Verbose ('Normalized AvgHD: {0}' -f $NAvgHD)
-        $obj = "" | Select-Object CalcKeySize,AvgHD,NAvgHD
-        $obj.CalcKeySize = $CalcKeySize
-        $obj.AvgHD = $AvgHD
-        $obj.NAvgHD = $NAvgHD
-        $objs += $obj
-    }
-}
-
-Write-Verbose ('$objs.count is {0}' -f $objs.count)
-Write-Verbose ('$objs is {0}' -f $objs)
+Write-Verbose ('objs.count is {0}' -f $objs.count)
+Write-Verbose ('objs is {0}' -f $($objs | Out-String))
 # Pull out the top n objects based on user's -top arg, default is five
 # if there are less than $top objs, reset $top accordingly
 if ($top -gt $objs.count)
@@ -691,7 +718,8 @@ if ($top -gt $objs.count)
     $top = $objs.count
 }
 
-if ($top -gt 1) {
+if ($top -gt 1) 
+{
     $TopObjs = $objs | Sort-Object NAvgHD | Select-Object -First $top
 } 
 else 
@@ -704,7 +732,7 @@ else
 $GCDs = @{} 
 
 # Instantiate a new $obj with different properties
-$obj = "" | Select-Object 'Probable Key Size',"Top ${top} KeySizes","Top ${top} NAvgHDs",GCD
+$obj = "" | Select-Object 'Probable Key Size',"Top ${top} KeySizes","Top ${top} NAvgHDs"
 
 
 # This nested loop will cacluate greatest common denominators for each
