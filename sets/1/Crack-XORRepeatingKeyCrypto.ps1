@@ -714,24 +714,25 @@ function GetKeySpace
 # Create a byte array for our ciphertext
 [byte[]]$CipherByteArray = Get-CipherByteArray -ParameterSetname $PSCmdlet.ParameterSetName -ProtectedString $String -ProtectedFile $File -Encoding $Encoding
 
-$objs, $CipherByteCount, $CipherByteCountIsOdd = GetNormalizedAverageHammingDistances -MaxSamples $MaxSamples -CipherByteArray $CipherByteArray -MinKeySize $MinKeySize -MaxKeySize $MaxKeySize
 
-Write-Verbose ('objs.count is {0}' -f $objs.count)
-Write-Verbose ('objs is {0}' -f $($objs | Out-String))
+$obj_NAvgHD, $CipherByteCount, $CipherByteCountIsOdd = GetNormalizedAverageHammingDistances -MaxSamples $MaxSamples -CipherByteArray $CipherByteArray -MinKeySize $MinKeySize -MaxKeySize $MaxKeySize
+
+Write-Verbose ('objs.count is {0}' -f $obj_NAvgHD.count)
+Write-Verbose ('objs is {0}' -f $($obj_NAvgHD | Out-String))
 # Pull out the top n objects based on user's -top arg, default is five
 # if there are less than $top objs, reset $top accordingly
-if ($top -gt $objs.count)
+if ($top -gt $obj_NAvgHD.count)
 {
-    $top = $objs.count
+    $top = $obj_NAvgHD.count
 }
 
 if ($top -ge 1) 
 {
-    $TopObjs = $objs | Sort-Object NAvgHD | Select-Object -First $top
+    $TopObjs = $obj_NAvgHD | Sort-Object NAvgHD | Select-Object -First $top
 } 
 else 
 {
-    $TopObjs = $objs
+    $TopObjs = $obj_NAvgHD
 }
 
 $obj = GetProbableKeySizeObj -TopObjs $TopObjs -top $top
