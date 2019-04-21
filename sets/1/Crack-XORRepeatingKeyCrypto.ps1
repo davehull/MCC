@@ -849,22 +849,31 @@ function GetProbableKeySizeObj
     $obj
 }
 
+function GetKeySpace
+{
+    Param(
+        [Parameter(Mandatory=$True,Position=0)]
+            [bool]$includeNonPrintable
+    )
+    # What's our keyspace? Default is ASCII printable characters only,
+    # but if the user passed -includeNonPrintable, we'll try all bytes
+    # 0 - 255
+    if ($includeNonPrintable) 
+    {
+        [char[]](1..255) -join ''
+    } 
+    else 
+    {
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~``!@#$%^&*()_-+={}[]\|:;`"'<>,.?/ "
+    }
+}
+
 $obj = GetProbableKeySizeObj -TopObjs $TopObjs -top $top
 
 # Make an array for our probable key
 $ProbableKey = @()
 
-# What's our keyspace? Default is ASCII printable characters only,
-# but if the user passed -includeNonPrintable, we'll try all bytes
-# 0 - 255
-if ($includeNonPrintable) 
-{
-    $keyspace = [char[]](1..255) -join ''
-} 
-else 
-{
-    $keyspace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~``!@#$%^&*()_-+={}[]\|:;`"'<>,.?/ "
-}
+$keyspace = GetKeySpace -includeNonPrintable $includeNonPrintable
 
 # Try and figure out what the byte is for each position in our key
 for ($a = 0; $a -lt $obj.'Probable Key Size'; $a++) 
