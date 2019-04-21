@@ -1,143 +1,3 @@
-<#
-.SYNOPSIS
-Crack-XORRepeatingKeyCrypto.ps1 uses well-known attack techniques to 
-break XOR repeating key cryptography of English language text.
-.DESCRIPTION
-Crack-XORRepeatingKeyCrypto.ps1 uses Hamming Distance and Greatest
-Common Denominator calculations to determine the probable size of a 
-repeating XOR key that may have been used for encrypting a string or
-file.
-
-Once the key size has been determined, this script uses English 
-language character frequencies to brute-force the key. Once the key has
-been determined, the script will use that key to decrypt the string or 
-file.
-
-The script works with base16 or base64 input, either from a file or
-from a string passed via the command line.
-
-The script will return an object with some metadata about its analysis,
-including the top n key sizes (where n is an argument provided by the
-user via the -top parameter) and the normalized average Hamming
-Distances for each of those top n key sizes.
-.PARAMETER MinKeySize
-an optional parameter for lower bound of the key
-.PARAMETER MaxKeySize
-An optional parameter that sets the upper-bound on the key size to try.
-If not supplied by the user, the script will set this to half the size
-of the ciphertext. If the user supplied value is more than half the
-size of the ciphertext, the script will change MaxKeySize to half the
-size of the ciphertext as anything larger would not be a repeating key.
-.PARAMETER MaxSamples
-An optional parameter that controls how many byte pair samples are
-passed to the Hamming Distance calculator, the default is to use as
-many as possible. Smaller values result in faster runtime, but less
-accuracy for determining the correct key size.
-.PARAMETER String
-A string of ciphertext to be decrypted. This parameter must be present
-unless the user has passed the -File parameter.
-.PARAMETER File
-A path to a file that contains the ciphertext to be decrypted. This
-parameter must be present unless the user has passed the -String
-parameter.
-.PARAMETER Encoding
-An optional parameter that tells the script whether the ciphertext is 
-encoded as base16 (hexadecimal) or base64, other formats are not 
-supported. Base16 is the default setting.
-.PARAMETER top
-An optional parameter that tells the script how many probable key sizes
-to calculate. The default is five.
-.PARAMETER MaxNAvgHD
-An optional parameter that sets the maximum normalized average Hamming
-Distance allowed for a probable key. The default is 3.5.
-.PARAMETER includeNonPrintable
-A switch that causes the script to expand the keyspace from printable
-ASCII characters to all bytes 0x00 through 0xFF.
-.PARAMETER PreserveNull
-Some XOR schemes use a "Null preserving" technique where if the ciphertext
-byte is null or is the same as the key byte, the xor operation is skipped
-for that byte.
-.EXAMPLE
-Crack-XORRepeatingKeyCrypto.ps1 -String "JhkPTTlMBgoVBE0FHEUSERUFUA1FCxECCFAJHQQVEQEVTBENGRVNBwMXDgtBGhUACUUeDh9QGA0AWAkIHBxFAxENCE8=" -Encoding base64 -MaxKeySize 21
-
-
-Probable Key Size        : 7
-ProbableKey            : example
-ProbableDecryptedValue : Can I come up with a nice example that works well for the help file?
-Top5KeySizes           : 9:7:19:14:3
-Top5NAvgHDs            : 2.37037037037037 : 2.46428571428571 : 2.55263157894737 : 2.5952380952381 : 2.68253968253968
-.EXAMPLE
-Get-Content .\7-encrypted.txt
-IwkQU0IIEEtBVwMAF1hIAB0AGhpYFVlGFhwCDQd+Kkk6ABZBGEUNHA1JF0EHF1lBTw1FHhUFBBIAChtJbCpLNg4RDR1TVAEaTgZTSwMLGwVJMU8aB08PLWFFKhtIEBxVBxQAA
-E4PRQ4dBAUaTg5+KkFtBBMcEEgNHFcHU1QOADgGGAYbDRJMDH4qQXcDAAsRSB0bRUkbRQ1MSwQUVCFkeS1jO0UYAAUMFxEcDBZOZHkAL09LEhxUCwgdVEkXQQ9DDkUNGw8MB0
-gMAS1rADwAWRcJBwcADRJOAkVLERYTDR0bRRt+KkFuBEUOEUgKEk4dU1QATABFGABICB9MZHkAMUwOBAoRSB0SSwxTTQQACgkWGg9keQA+G0UPABIKDFQbBRpEDFNPDwAPCg4
-aZWN+KiEWWUFOAgscAA0MHS1jU3QJQR8WWSYNHRtBSTVSAE4ACRAaZWNTcwEWAAVPBRFZBg0EFk0LFlJBVAMAWSUdDBZOSRxGQXMEEBV5Ykk6VBpTSABSD0UNHQUMAAALFkYA
-TAcAF1QcARYAGhxMBAAYEAsCAR8cUhp+KkFzAwBZAAAAHUsaU2kMAAgXGA4RZHkAKwZUQWkGRRMBGx1TRxscVwhOTEUWGAxkeS1jO0UYAAUMFxEcDBZOZHkAL09LEhxUDwYHA
-AccVAlJBUJZHQZJEE8EHk8PLWFFLhFIChJOHVNEAE4IAFkABw4WVAEWUmwqSysWVB8MU0MIHVRBVAoJElQJHVNBBR8tawA7CRwVGwxTVAgYRUFNDkUYGAcHFC1jU3cJRQVFAB
-sdSQBMABdFQU8FRR0bHwd+KmR5cxRSDkUVGwcCAAAOHE8FLWFFKh8JHRYACFNMCFQfCRxUBAYERRtTTg5XZm90fjwBFgAKBkUTVgRFHhsEDX4qSSdIBAANDBcRSCocTBweQgh
-BBWhzVCUIGEVJB08PSQwNDVQJSQRPBxdFE0YeCVkAAAAdR2R5ADJBEkUQAEgIFEEAHS1rAD8NHFQLHBZSHxwABk8HAXR+SD0bRUkVSQ9FSyYWGB0EEUkIHS1rACYEEhFIHRxO
-ABRIFQAKRQ4bBg0WUg8GTEFUAwwXE2VjU3QBFgACVQ4XDxtIDhxMDX4qQXQDAFkSAQcWACocTBRNCQwYGmVjU20IGEVBVAQLEBMAHVNBSQRPD0QOFx8BBEkHSAAdR2wqZm83G
-0geFgAKEk4VAA8EFxcNSQdPDhZUCUUZaHNUJgZTVwxTQwBOH0UNFQQCU0EdU0ENTGZv
-
-Crack-XORRepeatingKeyCrypto.ps1 -File .\7-encrypted.txt -Encoding base64 -MaxKeySize 26
-
-
-Probable Key Size        : 13
-ProbableKey            : this is a key
-ProbableDecryptedValue : Way back when, in sixty-seven
-                          I was the dandy of gamma chi
-                          Sweet things from Boston
-                          So young and willing
-                          Moved down to Scarsdale
-                          Where the hell am I
-
-                         Hey nineteen
-                          No we cant dance together
-                          We cant dance together
-                          No we cant talk at all
-                          Please take me along
-                          When you slide on down
-
-                         Hey nineteen
-                          Thats Retha Franklin
-                          She dont remember the Queen of Soul
-                          Its hard times befallen the sole survivors
-                          She thinks Im crazy
-                          But Im just growin' old
-
-                         Hey nineteen
-                          No we got nothin' in common
-                          We cant dance together
-                          No we cant talk at all
-                          Please take me along
-                          When you slide on down
-
-                         Sure looks good
-                          Skate a little lower now
-
-                         The cuervo gold
-                          The fine Columbian
-                          Make tonight a wonderful thing
-                          Say it again
-                          The cuervo gold
-                          The fine Columbian
-                          Make tonight a wonderful thing
-                          The cuervo gold
-                          The fine Columbian
-                          Make tonight a wonderful thing
-
-                         No we cant dance together
-                          No we cant talk at all
-
-Top5KeySizes           : 26:13:3:16:23
-Top5NAvgHDs            : 2.79010989010989 : 2.90140845070423 : 3.07195767195767 : 3.07219827586207 : 3.09891304347826
-.LINK
-http://trustedsignal.blogspot.com/2015/07/cracking-repeating-xor-key-crypto.html
-http://trustedsignal.blogspot.com/2015/06/xord-play-normalized-hamming-distance.html
-https://github.com/davehull/MCC/blob/master/sets/1/Crack-XORRepeatingKeyCrypto.ps1
-#>
-
-
 [CmdletBinding()]
 Param(
     [Parameter(Mandatory=$False,Position=2)]
@@ -166,6 +26,8 @@ Param(
 $error.clear()
 $ErrorActionPreference = 'Stop'
 
+# Begin Function Definitions
+#region function_defs
 function GetByte 
 {
     Param(
@@ -721,29 +583,6 @@ function WriteVerboseEnglishHighScore
     }
 
 }
-# All functions defined, let's get to work
-# Create a byte array for our ciphertext
-[byte[]]$CipherByteArray = Get-CipherByteArray -ParameterSetname $PSCmdlet.ParameterSetName -ProtectedString $String -ProtectedFile $File -Encoding $Encoding
-
-$objs, $CipherByteCount, $CipherByteCountIsOdd = GetNormalizedAverageHammingDistances -MaxSamples $MaxSamples -CipherByteArray $CipherByteArray -MinKeySize $MinKeySize -MaxKeySize $MaxKeySize
-
-Write-Verbose ('objs.count is {0}' -f $objs.count)
-Write-Verbose ('objs is {0}' -f $($objs | Out-String))
-# Pull out the top n objects based on user's -top arg, default is five
-# if there are less than $top objs, reset $top accordingly
-if ($top -gt $objs.count)
-{
-    $top = $objs.count
-}
-
-if ($top -ge 1) 
-{
-    $TopObjs = $objs | Sort-Object NAvgHD | Select-Object -First $top
-} 
-else 
-{
-    $TopObjs = $objs
-}
 
 function GetProbableKeySizeObj
 {
@@ -866,6 +705,33 @@ function GetKeySpace
     {
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~``!@#$%^&*()_-+={}[]\|:;`"'<>,.?/ "
     }
+}
+
+#endregion function_defs
+# End Function Definitions
+
+# All functions defined, let's get to work
+# Create a byte array for our ciphertext
+[byte[]]$CipherByteArray = Get-CipherByteArray -ParameterSetname $PSCmdlet.ParameterSetName -ProtectedString $String -ProtectedFile $File -Encoding $Encoding
+
+$objs, $CipherByteCount, $CipherByteCountIsOdd = GetNormalizedAverageHammingDistances -MaxSamples $MaxSamples -CipherByteArray $CipherByteArray -MinKeySize $MinKeySize -MaxKeySize $MaxKeySize
+
+Write-Verbose ('objs.count is {0}' -f $objs.count)
+Write-Verbose ('objs is {0}' -f $($objs | Out-String))
+# Pull out the top n objects based on user's -top arg, default is five
+# if there are less than $top objs, reset $top accordingly
+if ($top -gt $objs.count)
+{
+    $top = $objs.count
+}
+
+if ($top -ge 1) 
+{
+    $TopObjs = $objs | Sort-Object NAvgHD | Select-Object -First $top
+} 
+else 
+{
+    $TopObjs = $objs
 }
 
 $obj = GetProbableKeySizeObj -TopObjs $TopObjs -top $top
@@ -1001,3 +867,146 @@ else
 {
     $obj | Select-Object 'Probable Key Size','Probable Key','Probable Key Bytes','Probable Decrypted Value','Probable Decrypted Bytes','Key Size','NAvgHD'
 }
+
+#region Synopsis
+
+<#
+.SYNOPSIS
+Crack-XORRepeatingKeyCrypto.ps1 uses well-known attack techniques to 
+break XOR repeating key cryptography of English language text.
+.DESCRIPTION
+Crack-XORRepeatingKeyCrypto.ps1 uses Hamming Distance and Greatest
+Common Denominator calculations to determine the probable size of a 
+repeating XOR key that may have been used for encrypting a string or
+file.
+
+Once the key size has been determined, this script uses English 
+language character frequencies to brute-force the key. Once the key has
+been determined, the script will use that key to decrypt the string or 
+file.
+
+The script works with base16 or base64 input, either from a file or
+from a string passed via the command line.
+
+The script will return an object with some metadata about its analysis,
+including the top n key sizes (where n is an argument provided by the
+user via the -top parameter) and the normalized average Hamming
+Distances for each of those top n key sizes.
+.PARAMETER MinKeySize
+an optional parameter for lower bound of the key
+.PARAMETER MaxKeySize
+An optional parameter that sets the upper-bound on the key size to try.
+If not supplied by the user, the script will set this to half the size
+of the ciphertext. If the user supplied value is more than half the
+size of the ciphertext, the script will change MaxKeySize to half the
+size of the ciphertext as anything larger would not be a repeating key.
+.PARAMETER MaxSamples
+An optional parameter that controls how many byte pair samples are
+passed to the Hamming Distance calculator, the default is to use as
+many as possible. Smaller values result in faster runtime, but less
+accuracy for determining the correct key size.
+.PARAMETER String
+A string of ciphertext to be decrypted. This parameter must be present
+unless the user has passed the -File parameter.
+.PARAMETER File
+A path to a file that contains the ciphertext to be decrypted. This
+parameter must be present unless the user has passed the -String
+parameter.
+.PARAMETER Encoding
+An optional parameter that tells the script whether the ciphertext is 
+encoded as base16 (hexadecimal) or base64, other formats are not 
+supported. Base16 is the default setting.
+.PARAMETER top
+An optional parameter that tells the script how many probable key sizes
+to calculate. The default is five.
+.PARAMETER MaxNAvgHD
+An optional parameter that sets the maximum normalized average Hamming
+Distance allowed for a probable key. The default is 3.5.
+.PARAMETER includeNonPrintable
+A switch that causes the script to expand the keyspace from printable
+ASCII characters to all bytes 0x00 through 0xFF.
+.PARAMETER PreserveNull
+Some XOR schemes use a "Null preserving" technique where if the ciphertext
+byte is null or is the same as the key byte, the xor operation is skipped
+for that byte.
+.EXAMPLE
+Crack-XORRepeatingKeyCrypto.ps1 -String "JhkPTTlMBgoVBE0FHEUSERUFUA1FCxECCFAJHQQVEQEVTBENGRVNBwMXDgtBGhUACUUeDh9QGA0AWAkIHBxFAxENCE8=" -Encoding base64 -MaxKeySize 21
+
+
+Probable Key Size        : 7
+ProbableKey            : example
+ProbableDecryptedValue : Can I come up with a nice example that works well for the help file?
+Top5KeySizes           : 9:7:19:14:3
+Top5NAvgHDs            : 2.37037037037037 : 2.46428571428571 : 2.55263157894737 : 2.5952380952381 : 2.68253968253968
+.EXAMPLE
+Get-Content .\7-encrypted.txt
+IwkQU0IIEEtBVwMAF1hIAB0AGhpYFVlGFhwCDQd+Kkk6ABZBGEUNHA1JF0EHF1lBTw1FHhUFBBIAChtJbCpLNg4RDR1TVAEaTgZTSwMLGwVJMU8aB08PLWFFKhtIEBxVBxQAA
+E4PRQ4dBAUaTg5+KkFtBBMcEEgNHFcHU1QOADgGGAYbDRJMDH4qQXcDAAsRSB0bRUkbRQ1MSwQUVCFkeS1jO0UYAAUMFxEcDBZOZHkAL09LEhxUCwgdVEkXQQ9DDkUNGw8MB0
+gMAS1rADwAWRcJBwcADRJOAkVLERYTDR0bRRt+KkFuBEUOEUgKEk4dU1QATABFGABICB9MZHkAMUwOBAoRSB0SSwxTTQQACgkWGg9keQA+G0UPABIKDFQbBRpEDFNPDwAPCg4
+aZWN+KiEWWUFOAgscAA0MHS1jU3QJQR8WWSYNHRtBSTVSAE4ACRAaZWNTcwEWAAVPBRFZBg0EFk0LFlJBVAMAWSUdDBZOSRxGQXMEEBV5Ykk6VBpTSABSD0UNHQUMAAALFkYA
+TAcAF1QcARYAGhxMBAAYEAsCAR8cUhp+KkFzAwBZAAAAHUsaU2kMAAgXGA4RZHkAKwZUQWkGRRMBGx1TRxscVwhOTEUWGAxkeS1jO0UYAAUMFxEcDBZOZHkAL09LEhxUDwYHA
+AccVAlJBUJZHQZJEE8EHk8PLWFFLhFIChJOHVNEAE4IAFkABw4WVAEWUmwqSysWVB8MU0MIHVRBVAoJElQJHVNBBR8tawA7CRwVGwxTVAgYRUFNDkUYGAcHFC1jU3cJRQVFAB
+sdSQBMABdFQU8FRR0bHwd+KmR5cxRSDkUVGwcCAAAOHE8FLWFFKh8JHRYACFNMCFQfCRxUBAYERRtTTg5XZm90fjwBFgAKBkUTVgRFHhsEDX4qSSdIBAANDBcRSCocTBweQgh
+BBWhzVCUIGEVJB08PSQwNDVQJSQRPBxdFE0YeCVkAAAAdR2R5ADJBEkUQAEgIFEEAHS1rAD8NHFQLHBZSHxwABk8HAXR+SD0bRUkVSQ9FSyYWGB0EEUkIHS1rACYEEhFIHRxO
+ABRIFQAKRQ4bBg0WUg8GTEFUAwwXE2VjU3QBFgACVQ4XDxtIDhxMDX4qQXQDAFkSAQcWACocTBRNCQwYGmVjU20IGEVBVAQLEBMAHVNBSQRPD0QOFx8BBEkHSAAdR2wqZm83G
+0geFgAKEk4VAA8EFxcNSQdPDhZUCUUZaHNUJgZTVwxTQwBOH0UNFQQCU0EdU0ENTGZv
+
+Crack-XORRepeatingKeyCrypto.ps1 -File .\7-encrypted.txt -Encoding base64 -MaxKeySize 26
+
+
+Probable Key Size        : 13
+ProbableKey            : this is a key
+ProbableDecryptedValue : Way back when, in sixty-seven
+                          I was the dandy of gamma chi
+                          Sweet things from Boston
+                          So young and willing
+                          Moved down to Scarsdale
+                          Where the hell am I
+
+                         Hey nineteen
+                          No we cant dance together
+                          We cant dance together
+                          No we cant talk at all
+                          Please take me along
+                          When you slide on down
+
+                         Hey nineteen
+                          Thats Retha Franklin
+                          She dont remember the Queen of Soul
+                          Its hard times befallen the sole survivors
+                          She thinks Im crazy
+                          But Im just growin' old
+
+                         Hey nineteen
+                          No we got nothin' in common
+                          We cant dance together
+                          No we cant talk at all
+                          Please take me along
+                          When you slide on down
+
+                         Sure looks good
+                          Skate a little lower now
+
+                         The cuervo gold
+                          The fine Columbian
+                          Make tonight a wonderful thing
+                          Say it again
+                          The cuervo gold
+                          The fine Columbian
+                          Make tonight a wonderful thing
+                          The cuervo gold
+                          The fine Columbian
+                          Make tonight a wonderful thing
+
+                         No we cant dance together
+                          No we cant talk at all
+
+Top5KeySizes           : 26:13:3:16:23
+Top5NAvgHDs            : 2.79010989010989 : 2.90140845070423 : 3.07195767195767 : 3.07219827586207 : 3.09891304347826
+.LINK
+http://trustedsignal.blogspot.com/2015/07/cracking-repeating-xor-key-crypto.html
+http://trustedsignal.blogspot.com/2015/06/xord-play-normalized-hamming-distance.html
+https://github.com/davehull/MCC/blob/master/sets/1/Crack-XORRepeatingKeyCrypto.ps1
+#>
+
+#endregion Synopsis
