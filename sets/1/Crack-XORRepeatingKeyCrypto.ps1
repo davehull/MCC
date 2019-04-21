@@ -714,7 +714,6 @@ function GetKeySpace
 # Create a byte array for our ciphertext
 [byte[]]$CipherByteArray = Get-CipherByteArray -ParameterSetname $PSCmdlet.ParameterSetName -ProtectedString $String -ProtectedFile $File -Encoding $Encoding
 
-
 $obj_NAvgHD, $CipherByteCount, $CipherByteCountIsOdd = GetNormalizedAverageHammingDistances -MaxSamples $MaxSamples -CipherByteArray $CipherByteArray -MinKeySize $MinKeySize -MaxKeySize $MaxKeySize
 
 Write-Verbose ('objs.count is {0}' -f $obj_NAvgHD.count)
@@ -728,14 +727,14 @@ if ($top -gt $obj_NAvgHD.count)
 
 if ($top -ge 1) 
 {
-    $TopObjs = $obj_NAvgHD | Sort-Object NAvgHD | Select-Object -First $top
+    $obj_TopNAvgHD = $obj_NAvgHD | Sort-Object NAvgHD | Select-Object -First $top
 } 
 else 
 {
-    $TopObjs = $obj_NAvgHD
+    $obj_TopNAvgHD = $obj_NAvgHD
 }
 
-$obj = GetProbableKeySizeObj -TopObjs $TopObjs -top $top
+$obj = GetProbableKeySizeObj -TopObjs $obj_TopNAvgHD -top $top
 
 # Make an array for our probable key
 $ProbableKey = @()
@@ -860,7 +859,7 @@ $obj | Add-Member NoteProperty 'Probable Key' ($ProbableKey -join "")
 $obj | Add-Member NoteProperty 'Probable Key Bytes' ($ProbableKeyBytes -join ' ')
 $obj | Add-Member NoteProperty 'Probable Decrypted Value' $DecryptedString
 $obj | Add-Member NoteProperty 'Probable Decrypted Bytes' ($xordBytes -join ' ')
-if ($TopObjs.count -gt 1)
+if ($obj_TopNAvgHD.count -gt 1)
 {
     $obj | Select-Object 'Probable Key Size','Probable Key','Probable Key Bytes','Probable Decrypted Value','Probable Decrypted Bytes',"Top ${top} Key Sizes","Top ${top} NavgHDs"
 }
