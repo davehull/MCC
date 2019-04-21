@@ -734,7 +734,7 @@ else
     $obj_TopNAvgHD = $obj_NAvgHD
 }
 
-$obj = GetProbableKeySizeObj -TopObjs $obj_TopNAvgHD -top $top
+$obj_DecryptResult = GetProbableKeySizeObj -TopObjs $obj_TopNAvgHD -top $top
 
 # Make an array for our probable key
 $ProbableKey = @()
@@ -742,17 +742,17 @@ $ProbableKey = @()
 $keyspace = GetKeySpace -includeNonPrintable $includeNonPrintable
 
 # Try and figure out what the byte is for each position in our key
-for ($a = 0; $a -lt $obj.'Probable Key Size'; $a++) 
+for ($a = 0; $a -lt $obj_DecryptResult.'Probable Key Size'; $a++) 
 {
     $ProbableKey += ""
     $HighScoreObj = $null
-    Write-Verbose ('Brute forcing key byte position {0} of {1}' -f ($a + 1), $obj.'Probable Key Size')
+    Write-Verbose ('Brute forcing key byte position {0} of {1}' -f ($a + 1), $obj_DecryptResult.'Probable Key Size')
 
     # GetTransposedBlock will return an array of key size aligned bytes
     # if key size is 4, it will return bytes 0, 3, 7, 11... assuming
     # $KeyPosition is 0, if $KeyPosition is 2 and key size is 6, it
     # will return an array of bytes 2, 7, 13, 19...
-    $TransposedByteArray = GetTransposedBlock -KeySize $obj.'Probable Key Size' -CipherByteArray $CipherByteArray -KeyPosition $a
+    $TransposedByteArray = GetTransposedBlock -KeySize $obj_DecryptResult.'Probable Key Size' -CipherByteArray $CipherByteArray -KeyPosition $a
       
     # Iterate through each byte of our keyspace, xoring each byte of
     # our transposed byte arrays and store the result in a new byte 
@@ -855,17 +855,17 @@ foreach($char in $ProbableKey)
         $ProbableKeyBytes += '00'    
     }
 }
-$obj | Add-Member NoteProperty 'Probable Key' ($ProbableKey -join "")
-$obj | Add-Member NoteProperty 'Probable Key Bytes' ($ProbableKeyBytes -join ' ')
-$obj | Add-Member NoteProperty 'Probable Decrypted Value' $DecryptedString
-$obj | Add-Member NoteProperty 'Probable Decrypted Bytes' ($xordBytes -join ' ')
+$obj_DecryptResult | Add-Member NoteProperty 'Probable Key' ($ProbableKey -join "")
+$obj_DecryptResult | Add-Member NoteProperty 'Probable Key Bytes' ($ProbableKeyBytes -join ' ')
+$obj_DecryptResult | Add-Member NoteProperty 'Probable Decrypted Value' $DecryptedString
+$obj_DecryptResult | Add-Member NoteProperty 'Probable Decrypted Bytes' ($xordBytes -join ' ')
 if ($obj_TopNAvgHD.count -gt 1)
 {
-    $obj | Select-Object 'Probable Key Size','Probable Key','Probable Key Bytes','Probable Decrypted Value','Probable Decrypted Bytes',"Top ${top} Key Sizes","Top ${top} NavgHDs"
+    $obj_DecryptResult | Select-Object 'Probable Key Size','Probable Key','Probable Key Bytes','Probable Decrypted Value','Probable Decrypted Bytes',"Top ${top} Key Sizes","Top ${top} NavgHDs"
 }
 else
 {
-    $obj | Select-Object 'Probable Key Size','Probable Key','Probable Key Bytes','Probable Decrypted Value','Probable Decrypted Bytes','Key Size','NAvgHD'
+    $obj_DecryptResult | Select-Object 'Probable Key Size','Probable Key','Probable Key Bytes','Probable Decrypted Value','Probable Decrypted Bytes','Key Size','NAvgHD'
 }
 
 #region Synopsis
