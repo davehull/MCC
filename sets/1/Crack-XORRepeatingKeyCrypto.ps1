@@ -703,7 +703,7 @@ function GetNormalizedAverageHammingDistances
     $objs, $CipherByteCount, $CipherByteCountIsOdd
 }
 
-function WriteEnglishHighScore 
+function WriteVerboseEnglishHighScore 
 {
     Param(
         [Parameter(Mandatory=$True,Position=0)]
@@ -901,7 +901,7 @@ for ($a = 0; $a -lt $obj.'Probable Key Size'; $a++)
             $HighScoreObj = $brutedObj.PSObject.Copy()
             if ($VerbosePreference -eq 'Continue')
             {
-                WriteEnglishHighScore -Score $HighScoreObj.LetterFreqScore -Byte $keyByte
+                WriteVerboseEnglishHighScore -Score $HighScoreObj.LetterFreqScore -Byte $keyByte
             }
         }
         else 
@@ -915,7 +915,7 @@ for ($a = 0; $a -lt $obj.'Probable Key Size'; $a++)
                 $ProbableKey[$a] = $keyspace[$j]
                 if ($VerbosePreference -eq 'Continue')
                 {
-                    WriteEnglishHighScore -Score $HighScoreObj.LetterFreqScore -Byte $keyByte
+                    WriteVerboseEnglishHighScore -Score $HighScoreObj.LetterFreqScore -Byte $keyByte
                 }
             }
         }
