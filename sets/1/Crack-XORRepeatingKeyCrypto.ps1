@@ -583,7 +583,8 @@ function Get-CipherByteArray
 }
 
 
-function GetNormalizedAverageHammingDistances {
+function GetNormalizedAverageHammingDistances 
+{
     Param(
         [parameter(Mandatory=$True,Position=0)]
             [int]$MaxSamples,
@@ -702,7 +703,24 @@ function GetNormalizedAverageHammingDistances {
     $objs, $CipherByteCount, $CipherByteCountIsOdd
 }
 
+function WriteEnglishHighScore 
+{
+    Param(
+        [Parameter(Mandatory=$True,Position=0)]
+            [int]$Score,
+        [Parameter(Mandatory=$True,Position=1)]
+            [byte]$byte
+    )
+    if ($byte -ge 32 -and $byte -le 126)
+    {
+        Write-Verbose ('New English high score of {0} using byte value {1} (printable character ''{2}'')' -f $Score, $byte, [char]$byte)
+    }
+    else
+    {
+        Write-Verbose ('New English high score of {0} using byte value {1} (nonprintable character)' -f $Score, $byte)
+    }
 
+}
 # All functions defined, let's get to work
 # Create a byte array for our ciphertext
 [byte[]]$CipherByteArray = Get-CipherByteArray -ParameterSetname $PSCmdlet.ParameterSetName -ProtectedString $String -ProtectedFile $File -Encoding $Encoding
@@ -718,7 +736,7 @@ if ($top -gt $objs.count)
     $top = $objs.count
 }
 
-if ($top -gt 1) 
+if ($top -ge 1) 
 {
     $TopObjs = $objs | Sort-Object NAvgHD | Select-Object -First $top
 } 
@@ -727,19 +745,19 @@ else
     $TopObjs = $objs
 }
 
-# Make a hashtable for storing greatest common denominators and their
-# frequency of occurrence
-$GCDs = @{} 
-
-# Instantiate a new $obj with different properties
-$obj = "" | Select-Object 'Probable Key Size',"Top ${top} KeySizes","Top ${top} NAvgHDs"
-
 
 # This nested loop will cacluate greatest common denominators for each
 # of the caluclated key sizes in the top n objects
 Write-Verbose ('$TopObjs.count is {0}' -f $TopObjs.count)
 if ($TopObjs.count -gt 1) 
 {
+    # Make a hashtable for storing greatest common denominators and their
+    # frequency of occurrence
+    $GCDs = @{} 
+
+    # Instantiate a new $obj with different properties
+    $obj = "" | Select-Object 'Probable Key Size',"Top ${top} KeySizes","Top ${top} NAvgHDs"
+
     for ($p = 0; $p -lt $TopObjs.Count; $p++) 
     {
         for ($q = $p + 1; $q -lt $TopObjs.Count; $q++) 
@@ -814,16 +832,11 @@ if ($TopObjs.count -gt 1)
 }
 else 
 {
-    if ($CipherByteCountIsOdd)
-    {
-        $obj.'Probable Key Size' = ($CipherByteCount - 1) / 2
-    }
-    else 
-    {
-        $obj.'Probable Key Size' = $CipherByteCount / 2
-    }
-    $obj."Top ${top} Keysizes" = $objs[0].CalcKeySize
-    $obj."Top ${top} NAvgHDs" = $objs[0].NAvgHD
+    # There's only one probably key size
+    $obj = "" | Select-Object 'Probable Key Size','Top KeySize','Top NAvgHD'
+    $obj.'Probable Key Size' = $TopObjs.CalcKeySize
+    $obj.'Top KeySize' = $TopObjs.CalcKeySize
+    $obj.'Top NAvgHD' = $TobObjs.NAvgHD
 }
 # Make an array for our probable key
 $ProbableKey = @()
@@ -886,7 +899,7 @@ for ($a = 0; $a -lt $obj.'Probable Key Size'; $a++)
         {
             # First run, no $HighScoreObj
             $HighScoreObj = $brutedObj.PSObject.Copy()
-            Write-Verbose ('New English high score of {0} using byte value {1}' -f $HighScoreObj.LetterFreqScore, $keyByte)
+            WriteEnglishHighScore -Score $HighScoreObj.LetterFreqScore -Byte $keyByte
         }
         else 
         {
@@ -897,7 +910,7 @@ for ($a = 0; $a -lt $obj.'Probable Key Size'; $a++)
             {
                 $HighScoreObj = $brutedObj.PSObject.Copy()
                 $ProbableKey[$a] = $keyspace[$j]
-                Write-Verbose ('New English high score of {0} using byte value {1}' -f $HighScoreObj.LetterFreqScore, $keyByte)
+                WriteEnglishHighScore -Score $HighScoreObj.LetterFreqScore -Byte $keyByte
             }
         }
     }
