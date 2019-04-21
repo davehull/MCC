@@ -745,99 +745,112 @@ else
     $TopObjs = $objs
 }
 
-
-# This nested loop will cacluate greatest common denominators for each
-# of the caluclated key sizes in the top n objects
-Write-Verbose ('$TopObjs.count is {0}' -f $TopObjs.count)
-if ($TopObjs.count -gt 1) 
+function GetProbableKeySizeObj
 {
-    # Make a hashtable for storing greatest common denominators and their
-    # frequency of occurrence
-    $GCDs = @{} 
+    Param(
+        [Parameter(Mandatory=$True,Position=0)]
+            [PSObject]$TopObjs,
+        [Parameter(Mandatory=$True,Position=1)]
+            $top
+    )
 
-    # Instantiate a new $obj with different properties
-    $obj = "" | Select-Object 'Probable Key Size',"Top ${top} Key Sizes","Top ${top} NAvgHDs"
-
-    for ($p = 0; $p -lt $TopObjs.Count; $p++) 
+    # This nested loop will cacluate greatest common denominators for each
+    # of the caluclated key sizes in the top n objects
+    Write-Verbose ('$TopObjs.count is {0}' -f $TopObjs.count)
+    if ($TopObjs.count -gt 1) 
     {
-        for ($q = $p + 1; $q -lt $TopObjs.Count; $q++) 
-        {
-            $gcd = GetGreatestCommonDenominator -val1 $TopObjs[$p].CalcKeySize -val2 $TopObjs[$q].CalcKeySize
-            if ($GCDs.Contains($gcd)) 
-            {
-                # We've seen this GCD before, increment its count
-                $GCDs.set_item($gcd, $GCDs[$gcd] + 1)
-            } 
-            else 
-            {
-                # We've not seen this GCD before, add it to out table
-                $GCDs.Add($gcd, 1)
-            }
-        }      
+        # Make a hashtable for storing greatest common denominators and their
+        # frequency of occurrence
+        $GCDs = @{} 
 
-        # $MostFreqGCD is the GCD that appeared most frequently in the list
-        # of top n calculated key sizes, if this value is in the list of 
-        # the top n calculated key sizes, it is almost certainly the actual
-        # key size
-        $MostFreqGCD = $GCDs.GetEnumerator() | Sort-Object @{Expression={$_.Value -as [int]}},@{Expression={$_.Name -as [int]}} | Select-Object -Last 1 -ExpandProperty Name
-        Write-Verbose ('$MostFreqGCD is {0}' -f $MostFreqGCD)
+        # Instantiate a new $obj with different properties
+        $obj = "" | Select-Object 'Probable Key Size',"Top ${top} Key Sizes","Top ${top} NAvgHDs"
 
-        if (($TopObjs[0..($TopObjs.Count - 1)].CalcKeySize).Contains($MostFreqGCD) -and `
-            ($TopObjs | ? { $_.CalcKeySize -eq $MostFreqGCD -and $_.NAvgHD -lt $MaxNAvgHD})) 
+        for ($p = 0; $p -lt $TopObjs.Count; $p++) 
         {
-                $ProbableKeySize = $MostFreqGCD
-        } 
-        else 
-        {
-            # $MostFreqGCD was not in the top n calculated key sizes
-            # Set $ProbableKeySize1 to the smaller of the first two
-            # calculated key sizes
-            $ProbableKeySize1 = ([int]$TopObjs[0].CalcKeySize, [int]$TopObjs[1].CalcKeySize | Measure -Minimum).Minimum
-            
-            # Get the minimum Normalized average Hamming Distance from the 
-            # top n calculated key sizes and set $ProbableKeySize2 to that
-            # calculated key size
-            $MinNAvgHD = ($TopObjs[0..($TopObjs.Count - 1)].NAvgHD | Measure-Object -Minimum).Minimum
-            $ProbableKeySize2 = $TopObjs | ? { $_.NAvgHD -eq $MinNAvgHD } | Select-Object -ExpandProperty CalcKeySize
-            
-
-            if ($ProbableKeySize1 -eq $ProbableKeySize2) 
+            for ($q = $p + 1; $q -lt $TopObjs.Count; $q++) 
             {
-                # The smallest calculated key size also has the smallest
-                # NAvgHD and so is probably our key size
-                $ProbableKeySize = $ProbableKeySize1
-            } 
-            else 
-            {
-                if ($TopObjs | ? { $_.CalcKeySize -eq $ProbableKeySize1 -and $_.NAvgHD -lt $MaxNAvgHD } ) 
+                $gcd = GetGreatestCommonDenominator -val1 $TopObjs[$p].CalcKeySize -val2 $TopObjs[$q].CalcKeySize
+                if ($GCDs.Contains($gcd)) 
                 {
-                    # Hm, if $ProbableKeySize1 has a NAvgHD below the max
-                    # allowed NAvgHD, let's take it as our key size
+                    # We've seen this GCD before, increment its count
+                    $GCDs.set_item($gcd, $GCDs[$gcd] + 1)
+                } 
+                else 
+                {
+                    # We've not seen this GCD before, add it to out table
+                    $GCDs.Add($gcd, 1)
+                }
+            }      
+
+            # $MostFreqGCD is the GCD that appeared most frequently in the list
+            # of top n calculated key sizes, if this value is in the list of 
+            # the top n calculated key sizes, it is almost certainly the actual
+            # key size
+            $MostFreqGCD = $GCDs.GetEnumerator() | Sort-Object @{Expression={$_.Value -as [int]}},@{Expression={$_.Name -as [int]}} | Select-Object -Last 1 -ExpandProperty Name
+            Write-Verbose ('$MostFreqGCD is {0}' -f $MostFreqGCD)
+
+            if (($TopObjs[0..($TopObjs.Count - 1)].CalcKeySize).Contains($MostFreqGCD) -and `
+                ($TopObjs | ? { $_.CalcKeySize -eq $MostFreqGCD -and $_.NAvgHD -lt $MaxNAvgHD})) 
+            {
+                $ProbableKeySize = $MostFreqGCD
+            } 
+            else 
+            {
+                # $MostFreqGCD was not in the top n calculated key sizes
+                # Set $ProbableKeySize1 to the smaller of the first two
+                # calculated key sizes
+                $ProbableKeySize1 = ([int]$TopObjs[0].CalcKeySize, [int]$TopObjs[1].CalcKeySize | Measure -Minimum).Minimum
+                
+                # Get the minimum Normalized average Hamming Distance from the 
+                # top n calculated key sizes and set $ProbableKeySize2 to that
+                # calculated key size
+                $MinNAvgHD = ($TopObjs[0..($TopObjs.Count - 1)].NAvgHD | Measure-Object -Minimum).Minimum
+                $ProbableKeySize2 = $TopObjs | Where-Object { $_.NAvgHD -eq $MinNAvgHD } | Select-Object -ExpandProperty CalcKeySize
+                
+
+                if ($ProbableKeySize1 -eq $ProbableKeySize2) 
+                {
+                    # The smallest calculated key size also has the smallest
+                    # NAvgHD and so is probably our key size
                     $ProbableKeySize = $ProbableKeySize1
                 } 
                 else 
                 {
-                    # Well, maybe the right key size is the one with the
-                    # smallest NAvgHD
-                    $ProbableKeySize = $ProbableKeySize2
+                    if ($TopObjs | Where-Object { $_.CalcKeySize -eq $ProbableKeySize1 -and $_.NAvgHD -lt $MaxNAvgHD } ) 
+                    {
+                        # Hm, if $ProbableKeySize1 has a NAvgHD below the max
+                        # allowed NAvgHD, let's take it as our key size
+                        $ProbableKeySize = $ProbableKeySize1
+                    } 
+                    else 
+                    {
+                        # Well, maybe the right key size is the one with the
+                        # smallest NAvgHD
+                        $ProbableKeySize = $ProbableKeySize2
+                    }
                 }
             }
+            # Now that we have the probable key size, build out object and exit
+            $obj.'Probable Key Size' = $ProbableKeySize
+            $obj."Top ${top} Key Sizes" = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join ":"
+            $obj."Top ${top} NAvgHDs" = $TopObjs[0..($TopObjs.Count - 1)].NAvgHD -join " : "
+            break
         }
-        # Now that we have the probable key size, build out object and exit
-        $obj.'Probable Key Size' = $ProbableKeySize
-        $obj."Top ${top} Key Sizes" = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join ":"
-        $obj."Top ${top} NAvgHDs" = $TopObjs[0..($TopObjs.Count - 1)].NAvgHD -join " : "
-        break
     }
+    else 
+    {
+        # There's only one probably key size
+        $obj = "" | Select-Object 'Probable Key Size','Key Size','NAvgHD'
+        $obj.'Probable Key Size' = $TopObjs.CalcKeySize
+        $obj.'Key Size' = $TopObjs.CalcKeySize
+        $obj.'NAvgHD' = $TopObjs.NAvgHD
+    }
+    $obj
 }
-else 
-{
-    # There's only one probably key size
-    $obj = "" | Select-Object 'Probable Key Size','Key Size','NAvgHD'
-    $obj.'Probable Key Size' = $TopObjs.CalcKeySize
-    $obj.'Key Size' = $TopObjs.CalcKeySize
-    $obj.'NAvgHD' = $TopObjs.NAvgHD
-}
+
+$obj = GetProbableKeySizeObj -TopObjs $TopObjs -top $top
+
 # Make an array for our probable key
 $ProbableKey = @()
 
