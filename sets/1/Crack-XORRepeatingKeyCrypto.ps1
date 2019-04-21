@@ -841,6 +841,18 @@ else
 # Make an array for our probable key
 $ProbableKey = @()
 
+# What's our keyspace? Default is ASCII printable characters only,
+# but if the user passed -includeNonPrintable, we'll try all bytes
+# 0 - 255
+if ($includeNonPrintable) 
+{
+    $keyspace = [char[]](1..255) -join ''
+} 
+else 
+{
+    $keyspace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~``!@#$%^&*()_-+={}[]\|:;`"'<>,.?/ "
+}
+
 # Try and figure out what the byte is for each position in our key
 for ($a = 0; $a -lt $obj.'Probable Key Size'; $a++) 
 {
@@ -853,19 +865,7 @@ for ($a = 0; $a -lt $obj.'Probable Key Size'; $a++)
     # $KeyPosition is 0, if $KeyPosition is 2 and key size is 6, it
     # will return an array of bytes 2, 7, 13, 19...
     $TransposedByteArray = GetTransposedBlock -KeySize $obj.'Probable Key Size' -CipherByteArray $CipherByteArray -KeyPosition $a
-
-    # What's our keyspace? Default is ASCII printable characters only,
-    # but if the user passed -includeNonPrintable, we'll try all bytes
-    # 0 - 255
-    if ($includeNonPrintable) 
-    {
-        $keyspace = [char[]](1..255) -join ''
-    } 
-    else 
-    {
-        $keyspace = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789~``!@#$%^&*()_-+={}[]\|:;`"'<>,.?/ "
-    }  
-    
+      
     # Iterate through each byte of our keyspace, xoring each byte of
     # our transposed byte arrays and store the result in a new byte 
     # array, $xordBytes
