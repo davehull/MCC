@@ -756,7 +756,7 @@ if ($TopObjs.count -gt 1)
     $GCDs = @{} 
 
     # Instantiate a new $obj with different properties
-    $obj = "" | Select-Object 'Probable Key Size',"Top ${top} KeySizes","Top ${top} NAvgHDs"
+    $obj = "" | Select-Object 'Probable Key Size',"Top ${top} Key Sizes","Top ${top} NAvgHDs"
 
     for ($p = 0; $p -lt $TopObjs.Count; $p++) 
     {
@@ -825,7 +825,7 @@ if ($TopObjs.count -gt 1)
         }
         # Now that we have the probable key size, build out object and exit
         $obj.'Probable Key Size' = $ProbableKeySize
-        $obj."Top ${top} KeySizes" = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join ":"
+        $obj."Top ${top} Key Sizes" = $TopObjs[0..($TopObjs.Count - 1)].CalcKeySize -join ":"
         $obj."Top ${top} NAvgHDs" = $TopObjs[0..($TopObjs.Count - 1)].NAvgHD -join " : "
         break
     }
@@ -833,10 +833,10 @@ if ($TopObjs.count -gt 1)
 else 
 {
     # There's only one probably key size
-    $obj = "" | Select-Object 'Probable Key Size','Top KeySize','Top NAvgHD'
+    $obj = "" | Select-Object 'Probable Key Size','Key Size','NAvgHD'
     $obj.'Probable Key Size' = $TopObjs.CalcKeySize
-    $obj.'Top KeySize' = $TopObjs.CalcKeySize
-    $obj.'Top NAvgHD' = $TobObjs.NAvgHD
+    $obj.'Key Size' = $TopObjs.CalcKeySize
+    $obj.'NAvgHD' = $TopObjs.NAvgHD
 }
 # Make an array for our probable key
 $ProbableKey = @()
@@ -899,7 +899,10 @@ for ($a = 0; $a -lt $obj.'Probable Key Size'; $a++)
         {
             # First run, no $HighScoreObj
             $HighScoreObj = $brutedObj.PSObject.Copy()
-            WriteEnglishHighScore -Score $HighScoreObj.LetterFreqScore -Byte $keyByte
+            if ($VerbosePreference -eq 'Continue')
+            {
+                WriteEnglishHighScore -Score $HighScoreObj.LetterFreqScore -Byte $keyByte
+            }
         }
         else 
         {
@@ -910,7 +913,10 @@ for ($a = 0; $a -lt $obj.'Probable Key Size'; $a++)
             {
                 $HighScoreObj = $brutedObj.PSObject.Copy()
                 $ProbableKey[$a] = $keyspace[$j]
-                WriteEnglishHighScore -Score $HighScoreObj.LetterFreqScore -Byte $keyByte
+                if ($VerbosePreference -eq 'Continue')
+                {
+                    WriteEnglishHighScore -Score $HighScoreObj.LetterFreqScore -Byte $keyByte
+                }
             }
         }
     }
@@ -965,4 +971,11 @@ $obj | Add-Member NoteProperty 'Probable Key' ($ProbableKey -join "")
 $obj | Add-Member NoteProperty 'Probable Key Bytes' ($ProbableKeyBytes -join ' ')
 $obj | Add-Member NoteProperty 'Probable Decrypted Value' $DecryptedString
 $obj | Add-Member NoteProperty 'Probable Decrypted Bytes' ($xordBytes -join ' ')
-$obj | Select-Object 'Probable Key Size','Probable Key','Probable Key Bytes','Probable Decrypted Value','Probable Decrypted Bytes',"Top ${top} KeySizes","Top ${top} NavgHDs"
+if ($TopObjs.count -gt 1)
+{
+    $obj | Select-Object 'Probable Key Size','Probable Key','Probable Key Bytes','Probable Decrypted Value','Probable Decrypted Bytes',"Top ${top} Key Sizes","Top ${top} NavgHDs"
+}
+else
+{
+    $obj | Select-Object 'Probable Key Size','Probable Key','Probable Key Bytes','Probable Decrypted Value','Probable Decrypted Bytes','Key Size','NAvgHD'
+}
