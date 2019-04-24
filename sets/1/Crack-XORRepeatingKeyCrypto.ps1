@@ -718,6 +718,8 @@ $obj_NAvgHD, $CipherByteCount, $CipherByteCountIsOdd = GetNormalizedAverageHammi
 
 Write-Verbose ('objs.count is {0}' -f $obj_NAvgHD.count)
 Write-Verbose ('objs is {0}' -f $($obj_NAvgHD | Out-String))
+
+#region topNormalizedAvgHD
 # Pull out the top n objects based on user's -top arg, default is five
 # if there are less than $top objs, reset $top accordingly
 if ($top -gt $obj_NAvgHD.count)
@@ -733,6 +735,7 @@ else
 {
     $obj_TopNAvgHD = $obj_NAvgHD
 }
+#endregion topNormalizedAvgHD
 
 $obj_DecryptResult = GetProbableKeySizeObj -TopObjs $obj_TopNAvgHD -top $top
 
