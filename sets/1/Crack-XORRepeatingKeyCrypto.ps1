@@ -792,6 +792,33 @@ function GetProbableKey
     $ProbableKey
 }
 
+function GetDecryptedBytes {
+    Param(
+        [Parameter(Mandatory=$True,Position=0)]
+            [Array]$CipherByteArray,
+        [Parameter(Mandatory=$True,Position=1)]
+            [array]$keyBytes
+    )    
+    # Now we're going to take our array of probable key bytes and xor the
+    # original $CipherByteArray against that array
+    $(
+        for ($i = 0; $i -lt $CipherByteCount) 
+        {
+            for ($j = 0; $j -lt $keyBytes.Length; $j++) 
+            {
+                # We'll repeat the key until we reach ciphertext's end
+                $CipherByteArray[$i] -bxor $keybytes[$j]
+                $i++
+                if ($i -ge $CipherByteCount) 
+                {
+                    # We've reached the end of the ciphertext, exit loop
+                    $j = $keyBytes.Length
+                }
+            }
+        }
+    )
+}
+
 #endregion function_defs
 # End Function Definitions
 
@@ -831,24 +858,7 @@ $ProbableKey = GetProbableKey -obj_DecryptResult $obj_DecryptResult -CipherByteA
 # We've got the most probable key, build an array of those bytes
 $keybytes = GetBytes ($ProbableKey -join "")
 
-# Now we're going to take our array of probable key bytes and xor the
-# original $CipherByteArray against that array
-$xordBytes  = $(
-    for ($i = 0; $i -lt $CipherByteCount) 
-    {
-        for ($j = 0; $j -lt $keyBytes.Length; $j++) 
-        {
-            # We'll repeat the key until we reach ciphertext's end
-            $CipherByteArray[$i] -bxor $keybytes[$j]
-            $i++
-            if ($i -ge $CipherByteCount) 
-            {
-                # We've reached the end of the ciphertext, exit loop
-                $j = $keyBytes.Length
-            }
-        }
-    }
-)
+$xordBytes = GetDecryptedBytes -CipherByteArray $CipherByteArray -keyBytes $keyBytes
 
 
 # Convert the decrypted bytes to a string
