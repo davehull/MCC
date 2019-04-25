@@ -744,17 +744,7 @@ function GetProbableKey
             $xordBytes = $(
                 for ($i = 0; $i -lt $TransposedByteArray.Count; $i++) 
                 {
-                    if ($PreserveNull) 
-                    {
-                        if ($TransposedByteArray[$i] -ne 0 -And $TransposedByteArray[$i] -ne $keyByte)
-                        {
-                            $TransposedByteArray[$i] -bxor $keyByte
-                        }
-                    }
-                    else 
-                    {
-                        $TransposedByteArray[$i] -bxor $keyByte                    
-                    }
+                    $TransposedByteArray[$i] -bxor $keyByte                    
                 }
             )
       
@@ -807,7 +797,17 @@ function GetDecryptedBytes {
             for ($j = 0; $j -lt $keyBytes.Length; $j++) 
             {
                 # We'll repeat the key until we reach ciphertext's end
-                $CipherByteArray[$i] -bxor $keybytes[$j]
+                if ($PreserveNull)
+                {
+                    if ($CipherByteArray[$i] -ne 0 -And $CipherByteArray[$i] -ne $keybytes[$j])
+                    {
+                        $CipherByteArray[$i] -bxor $keybytes[$j]
+                    }
+                }
+                else
+                {
+                    $CipherByteArray[$i] -bxor $keybytes[$j]    
+                }
                 $i++
                 if ($i -ge $CipherByteCount) 
                 {
