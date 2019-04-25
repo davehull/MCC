@@ -782,7 +782,8 @@ function GetProbableKey
     $ProbableKey
 }
 
-function GetDecryptedBytes {
+function GetDecryptedBytes 
+{
     Param(
         [Parameter(Mandatory=$True,Position=0)]
             [Array]$CipherByteArray,
@@ -819,6 +820,20 @@ function GetDecryptedBytes {
     )
 }
 
+function GetDecryptedString
+{
+    Param(
+        [Parameter(Mandatory=$True,Position=0)]
+            [Array]$xordBytes
+    )
+    # Convert the decrypted bytes to a string
+    $(
+        foreach($byte in $xordBytes) 
+        {
+            [Char]$byte
+        }
+    ) -join ''
+}
 #endregion function_defs
 # End Function Definitions
 
@@ -860,17 +875,10 @@ $keybytes = GetBytes ($ProbableKey -join "")
 
 $xordBytes = GetDecryptedBytes -CipherByteArray $CipherByteArray -keyBytes $keyBytes
 
-
-# Convert the decrypted bytes to a string
-$DecryptedString = $(
-    foreach($byte in $xordBytes) 
-    {
-        [Char]$byte
-    }
-) -join ''
+$DecryptedString = GetDecryptedString -xordBytes $xordBytes
 
 # Build an object to return to the user
-$ProbableKeyBytes = @()
+<# $ProbableKeyBytes = @()
 foreach($char in $ProbableKey) 
 {
     # Write-Verbose ('$char is {0}' -f [byte][char]$char)
@@ -883,6 +891,8 @@ foreach($char in $ProbableKey)
         $ProbableKeyBytes += '00'    
     }
 }
+#>
+$ProbableKeyBytes = $keybytes
 $obj_DecryptResult | Add-Member NoteProperty 'Probable Key' ($ProbableKey -join "")
 $obj_DecryptResult | Add-Member NoteProperty 'Probable Key Bytes' ($ProbableKeyBytes -join ' ')
 $obj_DecryptResult | Add-Member NoteProperty 'Probable Decrypted Value' $DecryptedString
