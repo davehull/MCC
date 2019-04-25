@@ -707,6 +707,91 @@ function GetKeySpace
     }
 }
 
+
+function GetProbableKey
+{
+    Param(
+        [Parameter(Mandatory=$True,Position=0)]
+            [PSObject]$obj_DecryptResult,
+        [Parameter(Mandatory=$True,Position=1)]
+            [byte[]]$CipherByteArray,
+        [Parameter(Mandatory=$True,Position=1)]
+            [string]$keyspace
+    )
+
+    # Make an array for our probable key
+    $ProbableKey = @()
+
+    for ($a = 0; $a -lt $obj_DecryptResult.'Probable Key Size'; $a++) 
+    {
+        $ProbableKey += ""
+        $HighScoreObj = $null
+        Write-Verbose ('Brute forcing key byte position {0} of {1}' -f ($a + 1), $obj_DecryptResult.'Probable Key Size')
+    
+        # GetTransposedBlock will return an array of key size aligned bytes
+        # if key size is 4, it will return bytes 0, 3, 7, 11... assuming
+        # $KeyPosition is 0, if $KeyPosition is 2 and key size is 6, it
+        # will return an array of bytes 2, 7, 13, 19...
+        $TransposedByteArray = GetTransposedBlock -KeySize $obj_DecryptResult.'Probable Key Size' -CipherByteArray $CipherByteArray -KeyPosition $a
+          
+        # Iterate through each byte of our keyspace, xoring each byte of
+        # our transposed byte arrays and store the result in a new byte 
+        # array, $xordBytes
+        for ($j = 0; $j -lt $keyspace.Length; $j++) 
+        {
+            $keyByte = GetByte $keyspace[$j]
+            # Write-Verbose ('$keyByte is {0}' -f $keyByte)
+            $xordBytes = $(
+                for ($i = 0; $i -lt $TransposedByteArray.Count; $i++) 
+                {
+                    if ($PreserveNull) 
+                    {
+                        if ($TransposedByteArray[$i] -ne 0 -And $TransposedByteArray[$i] -ne $keyByte)
+                        {
+                            $TransposedByteArray[$i] -bxor $keyByte
+                        }
+                    }
+                    else 
+                    {
+                        $TransposedByteArray[$i] -bxor $keyByte                    
+                    }
+                }
+            )
+      
+            # Get an object with the key and the English letter frequency
+            # score for the given transposed, xor'd block of bytes
+            $brutedObj = GetEnglishScore -xordbytes $xordBytes -keyChar $keyspace[$j]
+            # Write-Verbose ('English score is {0}' -f $brutedObj.LetterFreqScore)
+    
+            if ($HighScoreObj -eq $null) 
+            {
+                # First run, no $HighScoreObj
+                $HighScoreObj = $brutedObj.PSObject.Copy()
+                if ($VerbosePreference -eq 'Continue')
+                {
+                    WriteVerboseEnglishHighScore -Score $HighScoreObj.LetterFreqScore -Byte $keyByte
+                }
+            }
+            else 
+            {
+                # The English letter frequency score was higher for this
+                # key byte, update the $HighScoreObj and store the new
+                # ProbableKey for this byte position of the key
+                if ([int]$brutedObj.LetterFreqScore -gt [int]$HighScoreObj.LetterFreqScore) 
+                {
+                    $HighScoreObj = $brutedObj.PSObject.Copy()
+                    $ProbableKey[$a] = $keyspace[$j]
+                    if ($VerbosePreference -eq 'Continue')
+                    {
+                        WriteVerboseEnglishHighScore -Score $HighScoreObj.LetterFreqScore -Byte $keyByte
+                    }
+                }
+            }
+        }
+    }
+    $ProbableKey
+}
+
 #endregion function_defs
 # End Function Definitions
 
@@ -739,79 +824,9 @@ else
 
 $obj_DecryptResult = GetProbableKeySizeObj -TopObjs $obj_TopNAvgHD -top $top
 
-# Make an array for our probable key
-$ProbableKey = @()
-
 $keyspace = GetKeySpace -includeNonPrintable $includeNonPrintable
 
-# Try and figure out what the byte is for each position in our key
-for ($a = 0; $a -lt $obj_DecryptResult.'Probable Key Size'; $a++) 
-{
-    $ProbableKey += ""
-    $HighScoreObj = $null
-    Write-Verbose ('Brute forcing key byte position {0} of {1}' -f ($a + 1), $obj_DecryptResult.'Probable Key Size')
-
-    # GetTransposedBlock will return an array of key size aligned bytes
-    # if key size is 4, it will return bytes 0, 3, 7, 11... assuming
-    # $KeyPosition is 0, if $KeyPosition is 2 and key size is 6, it
-    # will return an array of bytes 2, 7, 13, 19...
-    $TransposedByteArray = GetTransposedBlock -KeySize $obj_DecryptResult.'Probable Key Size' -CipherByteArray $CipherByteArray -KeyPosition $a
-      
-    # Iterate through each byte of our keyspace, xoring each byte of
-    # our transposed byte arrays and store the result in a new byte 
-    # array, $xordBytes
-    for ($j = 0; $j -lt $keyspace.Length; $j++) 
-    {
-        $keyByte = GetByte $keyspace[$j]
-        # Write-Verbose ('$keyByte is {0}' -f $keyByte)
-        $xordBytes = $(
-            for ($i = 0; $i -lt $TransposedByteArray.Count; $i++) 
-            {
-                if ($PreserveNull) 
-                {
-                    if ($TransposedByteArray[$i] -ne 0 -And $TransposedByteArray[$i] -ne $keyByte)
-                    {
-                        $TransposedByteArray[$i] -bxor $keyByte
-                    }
-                }
-                else 
-                {
-                    $TransposedByteArray[$i] -bxor $keyByte                    
-                }
-            }
-        )
-  
-        # Get an object with the key and the English letter frequency
-        # score for the given transposed, xor'd block of bytes
-        $brutedObj = GetEnglishScore -xordbytes $xordBytes -keyChar $keyspace[$j]
-        # Write-Verbose ('English score is {0}' -f $brutedObj.LetterFreqScore)
-
-        if ($HighScoreObj -eq $null) 
-        {
-            # First run, no $HighScoreObj
-            $HighScoreObj = $brutedObj.PSObject.Copy()
-            if ($VerbosePreference -eq 'Continue')
-            {
-                WriteVerboseEnglishHighScore -Score $HighScoreObj.LetterFreqScore -Byte $keyByte
-            }
-        }
-        else 
-        {
-            # The English letter frequency score was higher for this
-            # key byte, update the $HighScoreObj and store the new
-            # ProbableKey for this byte position of the key
-            if ([int]$brutedObj.LetterFreqScore -gt [int]$HighScoreObj.LetterFreqScore) 
-            {
-                $HighScoreObj = $brutedObj.PSObject.Copy()
-                $ProbableKey[$a] = $keyspace[$j]
-                if ($VerbosePreference -eq 'Continue')
-                {
-                    WriteVerboseEnglishHighScore -Score $HighScoreObj.LetterFreqScore -Byte $keyByte
-                }
-            }
-        }
-    }
-}
+$ProbableKey = GetProbableKey -obj_DecryptResult $obj_DecryptResult -CipherByteArray $CipherByteArray -keyspace $keyspace
 
 # We've got the most probable key, build an array of those bytes
 $keybytes = GetBytes ($ProbableKey -join "")
